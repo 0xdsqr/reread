@@ -1,0 +1,25 @@
+{
+  "name": "reread",
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "packages/convex",
+    "apps/mobile",
+    "tooling/typescript"
+  ],
+  "scripts": {
+    "dev": "cd apps/mobile && bun run dev",
+    "dev:web": "cd apps/mobile && bun run dev:web",
+    "build": "cd apps/mobile && bun run build",
+    "clean": "git clean -xdf node_modules dist .expo .convex",
+    "convex:dev": "cd packages/convex && bunx convex dev",
+    "convex:deploy": "cd packages/convex && bunx convex deploy",
+    "typecheck": "bun run typecheck:convex && bun run typecheck:mobile",
+    "typecheck:convex": "cd packages/convex && bunx tsc --noEmit",
+    "typecheck:mobile": "cd apps/mobile && bunx tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  }
+}
