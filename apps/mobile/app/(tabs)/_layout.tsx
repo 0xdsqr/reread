@@ -18,6 +18,20 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="books"
+        options={{
+          title: "My Books",
+          tabBarLabel: "Books",
+        }}
+      />
+      <Tabs.Screen
+        name="words"
+        options={{
+          title: "My Words",
+          tabBarLabel: "Words",
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: "Profile", 
