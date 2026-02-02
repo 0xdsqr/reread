@@ -12,7 +12,7 @@
       "*.json"
     ];
     excludes = [
-      "packages/ui/*"
+      "**/package.json"
       "packages/convex/convex/_generated/*"
       "*.gen.ts"
     ];
