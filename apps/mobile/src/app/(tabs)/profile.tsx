@@ -3,7 +3,6 @@ import { useQuery } from "convex/react"
 import {
   ActivityIndicator,
   FlatList,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -17,7 +16,7 @@ export default function Profile() {
 
   if (user === undefined) {
     return (
-      <View style={styles.center}>
+      <View className="flex-1 items-center justify-center">
         <ActivityIndicator size="large" color="#6366f1" />
       </View>
     )
@@ -25,53 +24,65 @@ export default function Profile() {
 
   if (!user) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.emptyTitle}>Not signed in</Text>
+      <View className="flex-1 items-center justify-center">
+        <Text className="text-xl font-bold text-gray-900">Not signed in</Text>
       </View>
     )
   }
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-white">
       {/* Profile header */}
-      <View style={styles.header}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
+      <View className="items-center pb-4 pt-6">
+        <View className="mb-3 h-[72px] w-[72px] items-center justify-center rounded-full bg-indigo-500">
+          <Text className="text-[28px] font-bold text-white">
             {(user.username || user.email || "?")[0]?.toUpperCase()}
           </Text>
         </View>
-        <Text style={styles.username}>{user.username || user.email}</Text>
-        {user.bio && <Text style={styles.bio}>{user.bio}</Text>}
+        <Text className="text-xl font-bold text-gray-900">
+          {user.username || user.email}
+        </Text>
+        {user.bio && (
+          <Text className="mt-1 px-10 text-center text-sm text-gray-500">
+            {user.bio}
+          </Text>
+        )}
       </View>
 
       {/* Stats row */}
-      <View style={styles.statsRow}>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{user.stats?.booksCount ?? 0}</Text>
-          <Text style={styles.statLabel}>Books</Text>
+      <View className="mx-6 flex-row items-center justify-center border-y border-gray-100 py-4">
+        <View className="flex-1 items-center">
+          <Text className="text-[22px] font-bold text-gray-900">
+            {user.stats?.booksCount ?? 0}
+          </Text>
+          <Text className="mt-0.5 text-xs text-gray-500">Books</Text>
         </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{user.stats?.wordsCount ?? 0}</Text>
-          <Text style={styles.statLabel}>Words</Text>
+        <View className="h-8 w-px bg-gray-200" />
+        <View className="flex-1 items-center">
+          <Text className="text-[22px] font-bold text-gray-900">
+            {user.stats?.wordsCount ?? 0}
+          </Text>
+          <Text className="mt-0.5 text-xs text-gray-500">Words</Text>
         </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>
+        <View className="h-8 w-px bg-gray-200" />
+        <View className="flex-1 items-center">
+          <Text className="text-[22px] font-bold text-gray-900">
             {user.stats?.currentStreak ?? 0}
           </Text>
-          <Text style={styles.statLabel}>Day Streak</Text>
+          <Text className="mt-0.5 text-xs text-gray-500">Day Streak</Text>
         </View>
       </View>
 
       {/* Recent words */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Recent Words</Text>
+      <View className="flex-1 px-4 pt-4">
+        <Text className="mb-3 text-lg font-bold text-gray-900">
+          Recent Words
+        </Text>
         {allWords === undefined ? (
           <ActivityIndicator size="small" color="#6366f1" />
         ) : allWords.length === 0 ? (
-          <View style={styles.emptySection}>
-            <Text style={styles.emptySectionText}>
+          <View className="items-center p-5">
+            <Text className="text-center text-sm text-gray-400">
               No words saved yet. Start reading and add words from your books!
             </Text>
           </View>
@@ -81,16 +92,24 @@ export default function Profile() {
             keyExtractor={(item) => item._id}
             scrollEnabled={false}
             renderItem={({ item }) => (
-              <View style={styles.wordRow}>
-                <View style={styles.wordInfo}>
-                  <Text style={styles.wordText}>{item.word}</Text>
+              <View className="flex-row items-center justify-between border-b border-gray-100 py-2.5">
+                <View className="flex-1">
+                  <Text className="text-base font-semibold text-gray-900">
+                    {item.word}
+                  </Text>
                   {item.definition && (
-                    <Text style={styles.wordDef} numberOfLines={1}>
+                    <Text
+                      className="mt-0.5 text-[13px] text-gray-500"
+                      numberOfLines={1}
+                    >
                       {item.definition}
                     </Text>
                   )}
                 </View>
-                <Text style={styles.wordBook} numberOfLines={1}>
+                <Text
+                  className="max-w-[120px] text-right text-xs text-gray-400"
+                  numberOfLines={1}
+                >
                   {item.bookTitle}
                 </Text>
               </View>
@@ -100,83 +119,12 @@ export default function Profile() {
       </View>
 
       {/* Sign out */}
-      <TouchableOpacity style={styles.signOutBtn} onPress={() => signOut()}>
-        <Text style={styles.signOutText}>Sign Out</Text>
+      <TouchableOpacity
+        className="m-4 items-center rounded-xl border border-red-500 p-3.5"
+        onPress={() => signOut()}
+      >
+        <Text className="text-base font-semibold text-red-500">Sign Out</Text>
       </TouchableOpacity>
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: { alignItems: "center", paddingTop: 24, paddingBottom: 16 },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: "#6366f1",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  avatarText: { fontSize: 28, fontWeight: "bold", color: "#fff" },
-  username: { fontSize: 20, fontWeight: "bold", color: "#111827" },
-  bio: {
-    fontSize: 14,
-    color: "#6b7280",
-    marginTop: 4,
-    textAlign: "center",
-    paddingHorizontal: 40,
-  },
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 16,
-    marginHorizontal: 24,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: "#f3f4f6",
-  },
-  statItem: { flex: 1, alignItems: "center" },
-  statNumber: { fontSize: 22, fontWeight: "bold", color: "#111827" },
-  statLabel: { fontSize: 12, color: "#6b7280", marginTop: 2 },
-  statDivider: { width: 1, height: 32, backgroundColor: "#e5e7eb" },
-  section: { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#111827",
-    marginBottom: 12,
-  },
-  emptySection: { padding: 20, alignItems: "center" },
-  emptySectionText: { fontSize: 14, color: "#9ca3af", textAlign: "center" },
-  wordRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-  },
-  wordInfo: { flex: 1 },
-  wordText: { fontSize: 16, fontWeight: "600", color: "#111827" },
-  wordDef: { fontSize: 13, color: "#6b7280", marginTop: 2 },
-  wordBook: {
-    fontSize: 12,
-    color: "#9ca3af",
-    maxWidth: 120,
-    textAlign: "right",
-  },
-  emptyTitle: { fontSize: 20, fontWeight: "bold", color: "#111827" },
-  signOutBtn: {
-    margin: 16,
-    padding: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#ef4444",
-    alignItems: "center",
-  },
-  signOutText: { color: "#ef4444", fontSize: 16, fontWeight: "600" },
-})

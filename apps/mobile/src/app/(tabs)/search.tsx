@@ -6,7 +6,6 @@ import {
   FlatList,
   Image,
   Modal,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -96,7 +95,7 @@ export default function Search() {
 
   const renderBook = ({ item }: { item: BookResult }) => (
     <TouchableOpacity
-      style={styles.bookRow}
+      className="flex-row items-center border-b border-gray-100 py-3"
       onPress={() => {
         setSelectedBook(item)
         setShowStatusPicker(true)
@@ -104,32 +103,40 @@ export default function Search() {
       activeOpacity={0.7}
     >
       {item.coverUrl ? (
-        <Image source={{ uri: item.coverUrl }} style={styles.cover} />
+        <Image
+          source={{ uri: item.coverUrl }}
+          className="h-[68px] w-12 rounded"
+        />
       ) : (
-        <View style={[styles.cover, styles.noCover]}>
-          <Text style={styles.noCoverText}>No Cover</Text>
+        <View className="h-[68px] w-12 items-center justify-center rounded bg-gray-200">
+          <Text className="text-[10px] text-gray-500">No Cover</Text>
         </View>
       )}
-      <View style={styles.bookInfo}>
-        <Text style={styles.bookTitle} numberOfLines={2}>
+      <View className="ml-3 flex-1">
+        <Text
+          className="text-base font-semibold text-gray-900"
+          numberOfLines={2}
+        >
           {item.title}
         </Text>
-        <Text style={styles.bookAuthor} numberOfLines={1}>
+        <Text className="mt-0.5 text-sm text-gray-500" numberOfLines={1}>
           {item.author}
         </Text>
         {item.firstPublishYear != null && (
-          <Text style={styles.bookYear}>{item.firstPublishYear}</Text>
+          <Text className="mt-0.5 text-xs text-gray-400">
+            {item.firstPublishYear}
+          </Text>
         )}
       </View>
-      <Text style={styles.addIcon}>+</Text>
+      <Text className="px-2 text-2xl font-bold text-indigo-500">+</Text>
     </TouchableOpacity>
   )
 
   return (
-    <View style={styles.container}>
-      <View style={styles.searchBar}>
+    <View className="flex-1 bg-white">
+      <View className="m-4 flex-row items-center rounded-xl bg-gray-100 px-3 py-2.5">
         <TextInput
-          style={styles.searchInput}
+          className="flex-1 text-base text-gray-900"
           placeholder="Search books by title, author, or ISBN..."
           placeholderTextColor="#9ca3af"
           value={query}
@@ -139,34 +146,38 @@ export default function Search() {
         />
         {query.length > 0 && (
           <TouchableOpacity onPress={() => setQuery("")}>
-            <Text style={styles.clearIcon}>X</Text>
+            <Text className="p-1 text-base text-gray-400">X</Text>
           </TouchableOpacity>
         )}
       </View>
 
       {query.trim().length < 2 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>Find Your Next Read</Text>
-          <Text style={styles.emptySubtitle}>
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-xl font-bold text-gray-900">
+            Find Your Next Read
+          </Text>
+          <Text className="mt-1 text-base text-gray-500">
             Search by title, author, or ISBN
           </Text>
         </View>
       ) : isSearching ? (
-        <View style={styles.loading}>
+        <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#6366f1" />
-          <Text style={styles.loadingText}>Searching...</Text>
+          <Text className="mt-3 text-base text-gray-500">Searching...</Text>
         </View>
       ) : results !== null && results.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No Results</Text>
-          <Text style={styles.emptySubtitle}>Try a different search term</Text>
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-xl font-bold text-gray-900">No Results</Text>
+          <Text className="mt-1 text-base text-gray-500">
+            Try a different search term
+          </Text>
         </View>
       ) : results !== null ? (
         <FlatList
           data={results}
           keyExtractor={(item) => item.key}
           renderItem={renderBook}
-          contentContainerStyle={styles.list}
+          contentContainerClassName="px-4"
         />
       ) : null}
 
@@ -178,42 +189,53 @@ export default function Search() {
         onRequestClose={() => setShowStatusPicker(false)}
       >
         <TouchableOpacity
-          style={styles.modalBackdrop}
+          className="flex-1 items-center justify-center bg-black/50"
           activeOpacity={1}
           onPress={() => setShowStatusPicker(false)}
         >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle} numberOfLines={2}>
+          <View className="w-[85%] max-w-[360px] rounded-2xl bg-white p-6">
+            <Text
+              className="text-center text-lg font-bold text-gray-900"
+              numberOfLines={2}
+            >
               Add &ldquo;{selectedBook?.title}&rdquo;
             </Text>
-            <Text style={styles.modalSubtitle}>Choose a status:</Text>
+            <Text className="mt-1 mb-4 text-center text-sm text-gray-500">
+              Choose a status:
+            </Text>
 
             <TouchableOpacity
-              style={[styles.statusButton, { backgroundColor: "#6366f1" }]}
+              className="mb-2.5 items-center rounded-xl bg-indigo-500 p-3.5"
               onPress={() => handleAddBook("reading")}
             >
-              <Text style={styles.statusButtonText}>Currently Reading</Text>
+              <Text className="text-base font-semibold text-white">
+                Currently Reading
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.statusButton, { backgroundColor: "#10b981" }]}
+              className="mb-2.5 items-center rounded-xl bg-emerald-500 p-3.5"
               onPress={() => handleAddBook("finished")}
             >
-              <Text style={styles.statusButtonText}>Finished</Text>
+              <Text className="text-base font-semibold text-white">
+                Finished
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.statusButton, { backgroundColor: "#f59e0b" }]}
+              className="mb-2.5 items-center rounded-xl bg-amber-500 p-3.5"
               onPress={() => handleAddBook("want-to-read")}
             >
-              <Text style={styles.statusButtonText}>Want to Read</Text>
+              <Text className="text-base font-semibold text-white">
+                Want to Read
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.cancelButton}
+              className="mt-1 items-center p-3"
               onPress={() => setShowStatusPicker(false)}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text className="text-base text-gray-500">Cancel</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -221,83 +243,3 @@ export default function Search() {
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    margin: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: "#f3f4f6",
-    borderRadius: 12,
-  },
-  searchInput: { flex: 1, fontSize: 16, color: "#111827" },
-  clearIcon: { fontSize: 16, color: "#9ca3af", padding: 4 },
-  list: { paddingHorizontal: 16 },
-  bookRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-  },
-  cover: { width: 48, height: 68, borderRadius: 4 },
-  noCover: {
-    backgroundColor: "#e5e7eb",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  noCoverText: { fontSize: 10, color: "#6b7280" },
-  bookInfo: { flex: 1, marginLeft: 12 },
-  bookTitle: { fontSize: 16, fontWeight: "600", color: "#111827" },
-  bookAuthor: { fontSize: 14, color: "#6b7280", marginTop: 2 },
-  bookYear: { fontSize: 12, color: "#9ca3af", marginTop: 2 },
-  addIcon: {
-    fontSize: 24,
-    color: "#6366f1",
-    fontWeight: "bold",
-    paddingHorizontal: 8,
-  },
-  emptyState: { flex: 1, justifyContent: "center", alignItems: "center" },
-  emptyTitle: { fontSize: 20, fontWeight: "bold", color: "#111827" },
-  emptySubtitle: { fontSize: 16, color: "#6b7280", marginTop: 4 },
-  loading: { flex: 1, justifyContent: "center", alignItems: "center" },
-  loadingText: { fontSize: 16, color: "#6b7280", marginTop: 12 },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 24,
-    width: "85%",
-    maxWidth: 360,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#111827",
-    textAlign: "center",
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: "#6b7280",
-    textAlign: "center",
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  statusButton: {
-    padding: 14,
-    borderRadius: 10,
-    marginBottom: 10,
-    alignItems: "center",
-  },
-  statusButtonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  cancelButton: { padding: 12, alignItems: "center", marginTop: 4 },
-  cancelButtonText: { color: "#6b7280", fontSize: 16 },
-})

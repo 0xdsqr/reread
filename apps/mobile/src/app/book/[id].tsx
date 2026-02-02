@@ -7,7 +7,6 @@ import {
   Image,
   Modal,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -87,7 +86,7 @@ export default function BookDetail() {
 
   if (currentBook === undefined) {
     return (
-      <View style={styles.centered}>
+      <View className="flex-1 items-center justify-center">
         <ActivityIndicator size="large" color={ACCENT} />
       </View>
     )
@@ -95,8 +94,8 @@ export default function BookDetail() {
 
   if (!currentBook) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.notFoundText}>Book not found</Text>
+      <View className="flex-1 items-center justify-center">
+        <Text className="text-base text-gray-500">Book not found</Text>
       </View>
     )
   }
@@ -104,7 +103,7 @@ export default function BookDetail() {
   const { book, userBook } = currentBook
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-gray-50">
       <Stack.Screen
         options={{
           title: book?.title || "Book Detail",
@@ -114,40 +113,40 @@ export default function BookDetail() {
 
       <ScrollView>
         {/* Book Header */}
-        <View style={styles.headerSection}>
-          <View style={styles.headerRow}>
+        <View className="mb-2 bg-white p-5">
+          <View className="flex-row">
             {book?.coverUrl ? (
               <Image
                 source={{ uri: book.coverUrl }}
-                style={styles.cover}
+                className="mr-4 h-[120px] w-20 rounded-lg"
                 resizeMode="cover"
               />
             ) : (
-              <View style={[styles.cover, styles.noCover]}>
-                <Text style={styles.noCoverText}>No Cover</Text>
+              <View className="mr-4 h-[120px] w-20 items-center justify-center rounded-lg bg-neutral-200">
+                <Text className="text-base text-gray-500">No Cover</Text>
               </View>
             )}
 
-            <View style={styles.headerInfo}>
-              <Text style={styles.title}>{book?.title || "Unknown Title"}</Text>
+            <View className="flex-1">
+              <Text className="mb-2 text-xl font-bold text-gray-900">
+                {book?.title || "Unknown Title"}
+              </Text>
 
-              <Text style={styles.author}>
+              <Text className="mb-3 text-base text-gray-500">
                 by {book?.author || "Unknown Author"}
               </Text>
 
               <View
-                style={[
-                  styles.statusBadge,
-                  { backgroundColor: getStatusColor(userBook.status) },
-                ]}
+                className="mb-2 self-start rounded-2xl px-3 py-1.5"
+                style={{ backgroundColor: getStatusColor(userBook.status) }}
               >
-                <Text style={styles.statusBadgeText}>
+                <Text className="text-sm font-medium text-white">
                   {getStatusLabel(userBook.status)}
                 </Text>
               </View>
 
               {book?.firstPublishYear && (
-                <Text style={styles.publishYear}>
+                <Text className="text-sm text-gray-400">
                   Published {book.firstPublishYear}
                 </Text>
               )}
@@ -155,8 +154,8 @@ export default function BookDetail() {
           </View>
 
           {userBook.notes && (
-            <View style={styles.notesBox}>
-              <Text style={styles.notesText}>
+            <View className="mt-4 rounded-lg bg-gray-50 p-3">
+              <Text className="text-sm italic text-gray-500">
                 &ldquo;{userBook.notes}&rdquo;
               </Text>
             </View>
@@ -164,67 +163,68 @@ export default function BookDetail() {
         </View>
 
         {/* Words Section */}
-        <View style={styles.wordsSection}>
-          <View style={styles.wordsSectionHeader}>
-            <Text style={styles.wordsSectionTitle}>
+        <View className="bg-white p-5">
+          <View className="mb-4 flex-row items-center justify-between">
+            <Text className="text-lg font-bold text-gray-900">
               My Words ({wordsForBook?.length ?? 0})
             </Text>
 
             <TouchableOpacity
-              style={styles.addWordBtn}
+              className="rounded-lg bg-blue-500 px-4 py-2"
               onPress={() => setShowAddWord(true)}
             >
-              <Text style={styles.addWordBtnText}>+ Add Word</Text>
+              <Text className="font-medium text-white">+ Add Word</Text>
             </TouchableOpacity>
           </View>
 
           {wordsForBook === undefined ? (
-            <ActivityIndicator
-              size="small"
-              color={ACCENT}
-              style={styles.wordsLoader}
-            />
+            <ActivityIndicator size="small" color={ACCENT} className="my-8" />
           ) : wordsForBook.length === 0 ? (
-            <View style={styles.wordsEmpty}>
-              <Text style={styles.wordsEmptyTitle}>
+            <View className="items-center py-8">
+              <Text className="text-center text-base text-gray-500">
                 No words saved for this book yet
               </Text>
-              <Text style={styles.wordsEmptySubtitle}>
+              <Text className="mt-1 text-center text-sm text-gray-400">
                 Tap &ldquo;Add Word&rdquo; to save vocabulary as you read
               </Text>
             </View>
           ) : (
             <View>
               {wordsForBook.map((wordItem) => (
-                <View key={wordItem._id} style={styles.wordCard}>
-                  <View style={styles.wordCardHeader}>
-                    <Text style={styles.wordCardWord}>{wordItem.word}</Text>
+                <View
+                  key={wordItem._id}
+                  className="mb-3 rounded-lg bg-gray-50 p-4"
+                >
+                  <View className="mb-2 flex-row items-start justify-between">
+                    <Text className="flex-1 text-lg font-bold text-gray-900">
+                      {wordItem.word}
+                    </Text>
                     {wordItem.pageNumber != null && (
-                      <Text style={styles.wordCardPage}>
+                      <Text className="rounded-xl bg-white px-2 py-0.5 text-xs text-gray-500">
                         p. {wordItem.pageNumber}
                       </Text>
                     )}
                   </View>
 
                   {wordItem.definition && (
-                    <Text style={styles.wordCardDef}>
+                    <Text className="mb-2 text-base text-gray-700">
                       {wordItem.definition}
                     </Text>
                   )}
 
                   {wordItem.context && (
-                    <Text style={styles.wordCardContext}>
+                    <Text className="mb-2 text-sm italic text-gray-500">
                       &ldquo;{wordItem.context}&rdquo;
                     </Text>
                   )}
 
                   {wordItem.notes && (
-                    <Text style={styles.wordCardNotes}>
+                    <Text className="text-sm text-gray-500">
                       Note: {wordItem.notes}
                     </Text>
                   )}
 
-                  <Text style={styles.wordCardDate}>
+                  <Text className="mt-2 text-xs text-gray-400">
                     Added {formatDate(wordItem.createdAt)}
                   </Text>
                 </View>
@@ -240,23 +240,25 @@ export default function BookDetail() {
         animationType="slide"
         presentationStyle="pageSheet"
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
+        <View className="flex-1 bg-white">
+          <View className="flex-row items-center justify-between border-b border-gray-200 px-5 py-4">
             <TouchableOpacity onPress={() => setShowAddWord(false)}>
-              <Text style={styles.modalCancel}>Cancel</Text>
+              <Text className="text-base text-red-500">Cancel</Text>
             </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>Add Word</Text>
+            <Text className="text-lg font-bold text-gray-900">Add Word</Text>
 
             <TouchableOpacity onPress={handleAddWord}>
-              <Text style={styles.modalSave}>Save</Text>
+              <Text className="text-base font-medium text-blue-500">Save</Text>
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.modalBody}>
-            <Text style={styles.inputLabel}>Word *</Text>
+          <ScrollView className="p-5">
+            <Text className="mb-2 text-base font-medium text-gray-700">
+              Word *
+            </Text>
             <TextInput
-              style={styles.input}
+              className="mb-4 rounded-lg border border-gray-200 px-3 py-3 text-base text-gray-900"
               placeholder="Enter the word"
               placeholderTextColor="#9ca3af"
               value={word}
@@ -264,9 +266,11 @@ export default function BookDetail() {
               autoCapitalize="none"
             />
 
-            <Text style={styles.inputLabel}>Definition</Text>
+            <Text className="mb-2 text-base font-medium text-gray-700">
+              Definition
+            </Text>
             <TextInput
-              style={[styles.input, styles.inputMultiline]}
+              className="mb-4 min-h-[80px] rounded-lg border border-gray-200 px-3 py-3 text-base text-gray-900"
               placeholder="What does this word mean?"
               placeholderTextColor="#9ca3af"
               value={definition}
@@ -275,9 +279,11 @@ export default function BookDetail() {
               textAlignVertical="top"
             />
 
-            <Text style={styles.inputLabel}>Context</Text>
+            <Text className="mb-2 text-base font-medium text-gray-700">
+              Context
+            </Text>
             <TextInput
-              style={[styles.input, styles.inputMultiline]}
+              className="mb-4 min-h-[80px] rounded-lg border border-gray-200 px-3 py-3 text-base text-gray-900"
               placeholder="How was it used in the book?"
               placeholderTextColor="#9ca3af"
               value={context}
@@ -286,9 +292,11 @@ export default function BookDetail() {
               textAlignVertical="top"
             />
 
-            <Text style={styles.inputLabel}>Page Number</Text>
+            <Text className="mb-2 text-base font-medium text-gray-700">
+              Page Number
+            </Text>
             <TextInput
-              style={styles.input}
+              className="mb-4 rounded-lg border border-gray-200 px-3 py-3 text-base text-gray-900"
               placeholder="Page number (optional)"
               placeholderTextColor="#9ca3af"
               value={pageNumber}
@@ -296,9 +304,11 @@ export default function BookDetail() {
               keyboardType="numeric"
             />
 
-            <Text style={styles.inputLabel}>Notes</Text>
+            <Text className="mb-2 text-base font-medium text-gray-700">
+              Notes
+            </Text>
             <TextInput
-              style={[styles.input, styles.inputMultiline]}
+              className="mb-4 min-h-[80px] rounded-lg border border-gray-200 px-3 py-3 text-base text-gray-900"
               placeholder="Personal notes about this word"
               placeholderTextColor="#9ca3af"
               value={notes}
@@ -312,135 +322,3 @@ export default function BookDetail() {
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f9fafb" },
-  centered: { flex: 1, alignItems: "center", justifyContent: "center" },
-  notFoundText: { color: "#6b7280", fontSize: 16 },
-
-  // Header
-  headerSection: { backgroundColor: "#fff", padding: 20, marginBottom: 8 },
-  headerRow: { flexDirection: "row" },
-  cover: { width: 80, height: 120, borderRadius: 8, marginRight: 16 },
-  noCover: {
-    backgroundColor: "#e5e5e5",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  noCoverText: { color: "#6b7280", fontSize: 16 },
-  headerInfo: { flex: 1 },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#111827",
-    marginBottom: 8,
-  },
-  author: { fontSize: 16, color: "#6b7280", marginBottom: 12 },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    alignSelf: "flex-start",
-    marginBottom: 8,
-  },
-  statusBadgeText: { color: "#fff", fontSize: 14, fontWeight: "500" },
-  publishYear: { color: "#9ca3af", fontSize: 14 },
-  notesBox: {
-    backgroundColor: "#f9fafb",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 16,
-  },
-  notesText: { fontSize: 14, color: "#6b7280", fontStyle: "italic" },
-
-  // Words section
-  wordsSection: { backgroundColor: "#fff", padding: 20 },
-  wordsSectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  wordsSectionTitle: { fontSize: 18, fontWeight: "bold", color: "#111827" },
-  addWordBtn: {
-    backgroundColor: "#3b82f6",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  addWordBtnText: { color: "#fff", fontWeight: "500" },
-  wordsLoader: { marginVertical: 32 },
-  wordsEmpty: { alignItems: "center", paddingVertical: 32 },
-  wordsEmptyTitle: { color: "#6b7280", fontSize: 16, textAlign: "center" },
-  wordsEmptySubtitle: {
-    color: "#9ca3af",
-    fontSize: 14,
-    textAlign: "center",
-    marginTop: 4,
-  },
-
-  // Word cards
-  wordCard: {
-    backgroundColor: "#f9fafb",
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  wordCardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 8,
-  },
-  wordCardWord: { fontSize: 18, fontWeight: "bold", color: "#111827", flex: 1 },
-  wordCardPage: {
-    fontSize: 12,
-    color: "#6b7280",
-    backgroundColor: "#fff",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  wordCardDef: { fontSize: 16, color: "#374151", marginBottom: 8 },
-  wordCardContext: {
-    fontSize: 14,
-    color: "#6b7280",
-    fontStyle: "italic",
-    marginBottom: 8,
-  },
-  wordCardNotes: { fontSize: 14, color: "#6b7280" },
-  wordCardDate: { fontSize: 12, color: "#9ca3af", marginTop: 8 },
-
-  // Modal
-  modalContainer: { flex: 1, backgroundColor: "#fff" },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-  },
-  modalCancel: { color: "#ef4444", fontSize: 16 },
-  modalTitle: { fontSize: 18, fontWeight: "bold", color: "#111827" },
-  modalSave: { color: "#3b82f6", fontSize: 16, fontWeight: "500" },
-  modalBody: { padding: 20 },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: "500",
-    marginBottom: 8,
-    color: "#374151",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 16,
-    marginBottom: 16,
-    color: "#111827",
-  },
-  inputMultiline: { minHeight: 80 },
-})

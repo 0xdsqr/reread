@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native"
+import { Text, View } from "react-native"
 
 interface EmptyStateProps {
   icon?: string
@@ -8,32 +8,14 @@ interface EmptyStateProps {
 
 export function EmptyState({ icon, title, subtitle }: EmptyStateProps) {
   return (
-    <View style={styles.container}>
-      {icon && <Text style={styles.icon}>{icon}</Text>}
-      <Text style={styles.title}>{title}</Text>
-      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+    <View className="flex-1 items-center justify-center px-8">
+      {icon && <Text className="mb-3 text-5xl">{icon}</Text>}
+      <Text className="mb-2 text-center text-lg font-bold text-gray-500">
+        {title}
+      </Text>
+      {subtitle && (
+        <Text className="text-center text-sm text-gray-400">{subtitle}</Text>
+      )}
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 32,
-  },
-  icon: { fontSize: 48, marginBottom: 12 },
-  title: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#6b7280",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#9ca3af",
-    textAlign: "center",
-  },
-})

@@ -7,7 +7,6 @@ import {
   FlatList,
   Image,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -47,46 +46,47 @@ export default function Books() {
   const renderBookItem = ({ item }: { item: BookItem }) => (
     <TouchableOpacity
       onPress={() => router.push(`/book/${item.userBook._id}`)}
-      style={styles.bookCard}
+      className="mb-3 mx-4 flex-row rounded-lg bg-white p-4 shadow-sm elevation-2"
     >
       {item.book?.coverUrl ? (
         <Image
           source={{ uri: item.book.coverUrl }}
-          style={styles.cover}
+          className="mr-3 h-20 w-[60px] rounded"
           resizeMode="cover"
         />
       ) : (
-        <View style={[styles.cover, styles.noCover]}>
-          <Text style={styles.noCoverText}>No Cover</Text>
+        <View className="mr-3 h-20 w-[60px] items-center justify-center rounded bg-neutral-200">
+          <Text className="text-[10px] text-gray-500">No Cover</Text>
         </View>
       )}
 
-      <View style={styles.bookInfo}>
-        <Text style={styles.bookTitle} numberOfLines={2}>
+      <View className="flex-1">
+        <Text
+          className="mb-1 text-base font-semibold text-gray-900"
+          numberOfLines={2}
+        >
           {item.book?.title || "Unknown Title"}
         </Text>
-        <Text style={styles.bookAuthor} numberOfLines={1}>
+        <Text className="mb-2 text-sm text-gray-500" numberOfLines={1}>
           by {item.book?.author || "Unknown Author"}
         </Text>
 
-        <View style={styles.metaRow}>
+        <View className="flex-row items-center justify-between">
           <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: getStatusColor(item.userBook.status) },
-            ]}
+            className="rounded-xl px-2 py-1"
+            style={{ backgroundColor: getStatusColor(item.userBook.status) }}
           >
-            <Text style={styles.statusBadgeText}>
+            <Text className="text-xs font-medium text-white">
               {getStatusLabel(item.userBook.status)}
             </Text>
           </View>
-          <Text style={styles.wordCount}>
+          <Text className="text-xs text-gray-500">
             {item.wordsCount} {item.wordsCount === 1 ? "word" : "words"}
           </Text>
         </View>
 
         {item.userBook.notes && (
-          <Text style={styles.notes} numberOfLines={2}>
+          <Text className="mt-2 text-xs italic text-gray-500" numberOfLines={2}>
             &ldquo;{item.userBook.notes}&rdquo;
           </Text>
         )}
@@ -95,29 +95,25 @@ export default function Books() {
   )
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.pageTitle}>My Books</Text>
+    <View className="flex-1 bg-gray-50">
+      <Text className="m-4 mb-2 text-2xl font-bold text-gray-900">
+        My Books
+      </Text>
 
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.filterRow}
-        contentContainerStyle={styles.filterContent}
+        className="mb-4"
+        contentContainerClassName="px-4"
       >
         {statusOptions.map((option) => (
           <TouchableOpacity
             key={option.key}
-            style={[
-              styles.filterTab,
-              selectedStatus === option.key && styles.filterTabActive,
-            ]}
+            className={`mr-2 rounded-full px-4 py-2 ${selectedStatus === option.key ? "bg-indigo-500" : "bg-gray-100"}`}
             onPress={() => setSelectedStatus(option.key)}
           >
             <Text
-              style={[
-                styles.filterTabText,
-                selectedStatus === option.key && styles.filterTabTextActive,
-              ]}
+              className={`font-medium ${selectedStatus === option.key ? "text-white" : "text-gray-700"}`}
             >
               {option.label}
             </Text>
@@ -126,17 +122,17 @@ export default function Books() {
       </ScrollView>
 
       {myBooks === undefined ? (
-        <View style={styles.center}>
+        <View className="flex-1 items-center justify-center px-8">
           <ActivityIndicator size="large" color={ACCENT} />
         </View>
       ) : myBooks.length === 0 ? (
-        <View style={styles.center}>
-          <Text style={styles.emptyTitle}>
+        <View className="flex-1 items-center justify-center px-8">
+          <Text className="mb-2 text-center text-lg text-gray-500">
             {selectedStatus === "all"
               ? "No books in your library yet"
               : `No ${getStatusLabel(selectedStatus).toLowerCase()} books`}
           </Text>
-          <Text style={styles.emptySubtitle}>
+          <Text className="text-center text-sm text-gray-400">
             Use the Search tab to add books to your library
           </Text>
         </View>
@@ -146,88 +142,9 @@ export default function Books() {
           renderItem={renderBookItem}
           keyExtractor={(item) => item.userBook._id}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.list}
+          contentContainerClassName="pb-5"
         />
       )}
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f9fafb" },
-  pageTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#111827",
-    margin: 16,
-    marginBottom: 8,
-  },
-  filterRow: { marginBottom: 16 },
-  filterContent: { paddingHorizontal: 16 },
-  filterTab: {
-    backgroundColor: "#f3f4f6",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-  },
-  filterTabActive: { backgroundColor: ACCENT },
-  filterTabText: { color: "#374151", fontWeight: "500" },
-  filterTabTextActive: { color: "#fff" },
-  list: { paddingBottom: 20 },
-  bookCard: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    padding: 16,
-    marginBottom: 12,
-    marginHorizontal: 16,
-    borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  cover: { width: 60, height: 80, borderRadius: 4, marginRight: 12 },
-  noCover: {
-    backgroundColor: "#e5e5e5",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  noCoverText: { color: "#6b7280", fontSize: 10 },
-  bookInfo: { flex: 1 },
-  bookTitle: {
-    fontWeight: "600",
-    fontSize: 16,
-    color: "#111827",
-    marginBottom: 4,
-  },
-  bookAuthor: { color: "#6b7280", marginBottom: 8, fontSize: 14 },
-  metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
-  statusBadgeText: { color: "white", fontSize: 12, fontWeight: "500" },
-  wordCount: { color: "#6b7280", fontSize: 12 },
-  notes: {
-    color: "#6b7280",
-    fontSize: 12,
-    marginTop: 8,
-    fontStyle: "italic",
-  },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 32,
-  },
-  emptyTitle: {
-    color: "#6b7280",
-    fontSize: 18,
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  emptySubtitle: { color: "#9ca3af", fontSize: 14, textAlign: "center" },
-})

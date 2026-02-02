@@ -4,7 +4,6 @@ import { useState } from "react"
 import {
   ActivityIndicator,
   FlatList,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -32,35 +31,49 @@ export default function Words() {
     }) ?? []
 
   const renderWordItem = ({ item }: { item: WordItem }) => (
-    <View style={styles.wordCard}>
-      <View style={styles.wordHeader}>
-        <Text style={styles.wordText}>{item.word}</Text>
+    <View className="mb-3 mx-4 rounded-lg bg-white p-4 shadow-sm elevation-2">
+      <View className="mb-2 flex-row items-start">
+        <Text className="flex-1 text-xl font-bold text-gray-900">
+          {item.word}
+        </Text>
         {item.pageNumber != null && (
-          <Text style={styles.pageBadge}>p. {item.pageNumber}</Text>
+          <Text className="rounded-xl bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+            p. {item.pageNumber}
+          </Text>
         )}
       </View>
 
       {item.definition && (
-        <Text style={styles.definition}>{item.definition}</Text>
+        <Text className="mb-2 text-base text-gray-700">{item.definition}</Text>
       )}
 
       {item.context && (
-        <View style={styles.contextBox}>
-          <Text style={styles.contextText}>&ldquo;{item.context}&rdquo;</Text>
+        <View className="mb-2 rounded-md bg-gray-50 p-3">
+          <Text className="text-sm italic text-gray-500">
+            &ldquo;{item.context}&rdquo;
+          </Text>
         </View>
       )}
 
-      {item.notes && <Text style={styles.notes}>Note: {item.notes}</Text>}
+      {item.notes && (
+        <Text className="mb-2 text-sm text-gray-500">Note: {item.notes}</Text>
+      )}
 
-      <View style={styles.footer}>
+      <View className="flex-row items-center justify-between border-t border-gray-100 pt-2">
         <View>
-          <Text style={styles.bookTitle}>{item.bookTitle}</Text>
-          <Text style={styles.bookAuthor}>by {item.bookAuthor}</Text>
+          <Text className="text-xs font-medium text-gray-700">
+            {item.bookTitle}
+          </Text>
+          <Text className="text-[11px] text-gray-400">
+            by {item.bookAuthor}
+          </Text>
         </View>
-        <View style={styles.footerRight}>
-          <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
+        <View className="items-end">
+          <Text className="text-[11px] text-gray-400">
+            {formatDate(item.createdAt)}
+          </Text>
           {item.likesCount > 0 && (
-            <Text style={styles.likes}>
+            <Text className="text-[11px] text-red-500">
               {item.likesCount} {item.likesCount === 1 ? "like" : "likes"}
             </Text>
           )}
@@ -70,11 +83,13 @@ export default function Words() {
   )
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.pageTitle}>My Words</Text>
+    <View className="flex-1 bg-gray-50">
+      <Text className="m-4 mb-2 text-2xl font-bold text-gray-900">
+        My Words
+      </Text>
 
       <TextInput
-        style={styles.searchInput}
+        className="mx-4 mb-4 rounded-lg border border-gray-200 bg-white px-4 py-3 text-base"
         placeholder="Search words, definitions, or books..."
         value={searchQuery}
         onChangeText={setSearchQuery}
@@ -83,17 +98,17 @@ export default function Words() {
       />
 
       {myWords === undefined ? (
-        <View style={styles.center}>
+        <View className="flex-1 items-center justify-center px-8">
           <ActivityIndicator size="large" color={ACCENT} />
         </View>
       ) : filteredWords.length === 0 ? (
-        <View style={styles.center}>
-          <Text style={styles.emptyTitle}>
+        <View className="flex-1 items-center justify-center px-8">
+          <Text className="mb-2 text-center text-lg text-gray-500">
             {myWords.length === 0
               ? "No words saved yet"
               : "No words match your search"}
           </Text>
-          <Text style={styles.emptySubtitle}>
+          <Text className="text-center text-sm text-gray-400">
             {myWords.length === 0
               ? "Start reading books and save words you want to remember"
               : "Try a different search term"}
@@ -101,7 +116,7 @@ export default function Words() {
         </View>
       ) : (
         <>
-          <Text style={styles.resultCount}>
+          <Text className="mx-4 mb-2 text-sm text-gray-500">
             {filteredWords.length}{" "}
             {filteredWords.length === 1 ? "word" : "words"} found
           </Text>
@@ -110,105 +125,10 @@ export default function Words() {
             renderItem={renderWordItem}
             keyExtractor={(item) => item._id}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.list}
+            contentContainerClassName="pb-5"
           />
         </>
       )}
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f9fafb" },
-  pageTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#111827",
-    margin: 16,
-    marginBottom: 8,
-  },
-  searchInput: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    fontSize: 16,
-  },
-  resultCount: {
-    fontSize: 14,
-    color: "#6b7280",
-    marginHorizontal: 16,
-    marginBottom: 8,
-  },
-  list: { paddingBottom: 20 },
-  wordCard: {
-    backgroundColor: "#fff",
-    padding: 16,
-    marginBottom: 12,
-    marginHorizontal: 16,
-    borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  wordHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 8,
-  },
-  wordText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#111827",
-    flex: 1,
-  },
-  pageBadge: {
-    fontSize: 12,
-    color: "#6b7280",
-    backgroundColor: "#f3f4f6",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  definition: { fontSize: 16, color: "#374151", marginBottom: 8 },
-  contextBox: {
-    backgroundColor: "#f9fafb",
-    padding: 12,
-    borderRadius: 6,
-    marginBottom: 8,
-  },
-  contextText: { fontSize: 14, color: "#6b7280", fontStyle: "italic" },
-  notes: { fontSize: 14, color: "#6b7280", marginBottom: 8 },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderTopColor: "#f3f4f6",
-    paddingTop: 8,
-  },
-  bookTitle: { fontSize: 12, fontWeight: "500", color: "#374151" },
-  bookAuthor: { fontSize: 11, color: "#9ca3af" },
-  footerRight: { alignItems: "flex-end" },
-  date: { fontSize: 11, color: "#9ca3af" },
-  likes: { fontSize: 11, color: "#ef4444" },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 32,
-  },
-  emptyTitle: {
-    color: "#6b7280",
-    fontSize: 18,
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  emptySubtitle: { color: "#9ca3af", fontSize: 14, textAlign: "center" },
-})

@@ -6,13 +6,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native"
-import { ACCENT } from "../../lib/constants"
 
 function extractErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -53,19 +51,21 @@ export default function SignIn() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.flex}
+      className="flex-1 bg-white"
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerClassName="flex-grow justify-center p-5"
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.heading}>Welcome Back</Text>
+        <Text className="mb-10 text-center text-[32px] font-bold text-gray-900">
+          Welcome Back
+        </Text>
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Email</Text>
+        <View className="mb-4">
+          <Text className="mb-2 text-base text-gray-700">Email</Text>
           <TextInput
-            style={styles.input}
+            className="rounded-lg border border-gray-300 p-3 text-base text-gray-900"
             value={email}
             onChangeText={setEmail}
             placeholder="Enter your email"
@@ -77,10 +77,10 @@ export default function SignIn() {
           />
         </View>
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Password</Text>
+        <View className="mb-4">
+          <Text className="mb-2 text-base text-gray-700">Password</Text>
           <TextInput
-            style={styles.input}
+            className="rounded-lg border border-gray-300 p-3 text-base text-gray-900"
             value={password}
             onChangeText={setPassword}
             placeholder="Enter your password"
@@ -92,19 +92,22 @@ export default function SignIn() {
         </View>
 
         <TouchableOpacity
-          style={[styles.button, isLoading && styles.buttonDisabled]}
+          className={`mt-2 mb-4 items-center rounded-lg p-4 ${isLoading ? "bg-gray-400" : "bg-indigo-500"}`}
           onPress={handleSignIn}
           disabled={isLoading}
         >
-          <Text style={styles.buttonText}>
+          <Text className="text-base font-semibold text-white">
             {isLoading ? "Signing in..." : "Sign In"}
           </Text>
         </TouchableOpacity>
 
-        <View style={styles.linkRow}>
-          <Text style={styles.linkText}>
+        <View className="items-center">
+          <Text className="text-gray-500">
             Don't have an account?{" "}
-            <Link href="/(auth)/sign-up" style={styles.link}>
+            <Link
+              href="/(auth)/sign-up"
+              className="font-semibold text-indigo-500"
+            >
               Sign up
             </Link>
           </Text>
@@ -113,42 +116,3 @@ export default function SignIn() {
     </KeyboardAvoidingView>
   )
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: "#fff" },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    padding: 20,
-  },
-  heading: {
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 40,
-    textAlign: "center",
-    color: "#111827",
-  },
-  field: { marginBottom: 16 },
-  label: { fontSize: 16, marginBottom: 8, color: "#374151" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: "#111827",
-  },
-  button: {
-    backgroundColor: ACCENT,
-    padding: 16,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  buttonDisabled: { backgroundColor: "#9ca3af" },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  linkRow: { alignItems: "center" },
-  linkText: { color: "#6b7280" },
-  link: { color: ACCENT, fontWeight: "600" },
-})

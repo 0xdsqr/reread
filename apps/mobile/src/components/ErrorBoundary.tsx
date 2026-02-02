@@ -1,6 +1,5 @@
 import React from "react"
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native"
-import { ACCENT } from "../lib/constants"
+import { Text, TouchableOpacity, View } from "react-native"
 
 interface Props {
   children: React.ReactNode
@@ -28,16 +27,20 @@ export class ErrorBoundary extends React.Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <View style={styles.container}>
-          <Text style={styles.title}>Something went wrong</Text>
-          <Text style={styles.message}>
+        <View className="flex-1 items-center justify-center bg-white p-8">
+          <Text className="mb-2 text-xl font-bold text-gray-900">
+            Something went wrong
+          </Text>
+          <Text className="mb-6 text-center text-sm text-gray-500">
             {this.state.error?.message || "An unexpected error occurred"}
           </Text>
           <TouchableOpacity
-            style={styles.button}
+            className="rounded-lg bg-indigo-500 px-6 py-3"
             onPress={() => this.setState({ hasError: false, error: null })}
           >
-            <Text style={styles.buttonText}>Try Again</Text>
+            <Text className="text-base font-semibold text-white">
+              Try Again
+            </Text>
           </TouchableOpacity>
         </View>
       )
@@ -46,36 +49,3 @@ export class ErrorBoundary extends React.Component<Props, State> {
     return this.props.children
   }
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 32,
-    backgroundColor: "#fff",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#111827",
-    marginBottom: 8,
-  },
-  message: {
-    fontSize: 14,
-    color: "#6b7280",
-    textAlign: "center",
-    marginBottom: 24,
-  },
-  button: {
-    backgroundColor: ACCENT,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-})

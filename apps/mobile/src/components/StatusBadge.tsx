@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native"
+import { Text, View } from "react-native"
 import { getStatusColor, getStatusLabel } from "../lib/constants"
 
 interface StatusBadgeProps {
@@ -12,28 +12,25 @@ export function StatusBadge({ status, solid = true }: StatusBadgeProps) {
 
   if (solid) {
     return (
-      <View style={[styles.badge, { backgroundColor: color }]}>
-        <Text style={styles.solidText}>{getStatusLabel(status)}</Text>
+      <View
+        className="self-start rounded-xl px-2.5 py-1"
+        style={{ backgroundColor: color }}
+      >
+        <Text className="text-xs font-medium text-white">
+          {getStatusLabel(status)}
+        </Text>
       </View>
     )
   }
 
   return (
-    <View style={[styles.badge, { backgroundColor: `${color}20` }]}>
-      <Text style={[styles.tintedText, { color }]}>
+    <View
+      className="self-start rounded-xl px-2.5 py-1"
+      style={{ backgroundColor: `${color}20` }}
+    >
+      <Text className="text-xs font-medium" style={{ color }}>
         {getStatusLabel(status)}
       </Text>
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    alignSelf: "flex-start",
-  },
-  solidText: { color: "#fff", fontSize: 12, fontWeight: "500" },
-  tintedText: { fontSize: 12, fontWeight: "500" },
-})
