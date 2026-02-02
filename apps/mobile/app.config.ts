@@ -30,4 +30,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     typedRoutes: true,
   },
   plugins: ["expo-router"],
+  extra: {
+    eas: {
+      projectId: "15a80feb-d3b8-488d-9bdf-95b0296f1a03",
+    },
+  },
 })
