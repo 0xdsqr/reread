@@ -1,6 +1,6 @@
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
-import { authTables } from "@convex-dev/auth/server";
+import { authTables } from "@convex-dev/auth/server"
+import { defineSchema, defineTable } from "convex/server"
+import { v } from "convex/values"
 
 export default defineSchema({
   ...authTables,
@@ -51,9 +51,10 @@ export default defineSchema({
     status: v.union(
       v.literal("reading"),
       v.literal("finished"),
-      v.literal("want-to-read")
+      v.literal("want-to-read"),
     ),
     notes: v.optional(v.string()),
+    wordsCount: v.number(),
     startedAt: v.optional(v.number()),
     finishedAt: v.optional(v.number()),
     createdAt: v.number(),
@@ -61,6 +62,7 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_book", ["bookId"])
     .index("by_user_book", ["userId", "bookId"])
+    .index("by_user_status", ["userId", "status"])
     .index("by_status", ["status"]),
 
   // Words saved by users
@@ -80,6 +82,7 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_userBook", ["userBookId"])
     .index("by_book", ["bookId"])
+    .index("by_book_public", ["bookId", "isPublic"])
     .index("by_word", ["word"])
     .index("by_public", ["isPublic"]),
 
@@ -93,30 +96,8 @@ export default defineSchema({
     .index("by_word", ["wordId"])
     .index("by_user_word", ["userId", "wordId"]),
 
-  // Follow relationships
-  follows: defineTable({
-    followerId: v.id("users"),
-    followingId: v.id("users"),
-    createdAt: v.number(),
-  })
-    .index("by_follower", ["followerId"])
-    .index("by_following", ["followingId"])
-    .index("by_follower_following", ["followerId", "followingId"]),
-
-  // Badge definitions
-  badges: defineTable({
-    name: v.string(),
-    description: v.string(),
-    icon: v.string(),
-    criteria: v.string(),
-  }).index("by_name", ["name"]),
-
-  // User badge achievements
-  userBadges: defineTable({
-    userId: v.id("users"),
-    badgeId: v.id("badges"),
-    earnedAt: v.number(),
-  })
-    .index("by_user", ["userId"])
-    .index("by_badge", ["badgeId"]),
-});
+  // TODO: Future features (not yet implemented)
+  // follows: defineTable({...}) -- social follow relationships
+  // badges: defineTable({...}) -- achievement badge definitions
+  // userBadges: defineTable({...}) -- user earned badges
+})

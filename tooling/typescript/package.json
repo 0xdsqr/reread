@@ -1,9 +1,7 @@
 {
-  "name": "@reread/typescript",
-  "version": "0.1.0",
+  "name": "@reread/tsconfig",
   "private": true,
-  "files": ["*.json"],
-  "devDependencies": {
-    "typescript": "^5"
-  }
+  "files": [
+    "*.json"
+  ]
 }

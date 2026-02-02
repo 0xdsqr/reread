@@ -1,7 +1,21 @@
-import { v } from "convex/values";
-import { query, mutation } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
-import { ConvexError } from "convex/values";
+import { getAuthUserId } from "@convex-dev/auth/server"
+import { ConvexError, v } from "convex/values"
+import type { Doc } from "./_generated/dataModel"
+import { mutation, type QueryCtx, query } from "./_generated/server"
+
+// Shared status validator -- single source of truth
+const statusValidator = v.union(
+  v.literal("reading"),
+  v.literal("finished"),
+  v.literal("want-to-read"),
+)
+
+// Helper: enrich a userBook with its book data.
+// wordsCount is now a field on userBooks -- no document scan needed.
+async function enrichUserBook(ctx: QueryCtx, userBook: Doc<"userBooks">) {
+  const book = await ctx.db.get(userBook.bookId)
+  return { userBook, book, wordsCount: userBook.wordsCount }
+}
 
 // Add a book to user's profile
 export const add = mutation({
@@ -12,131 +26,107 @@ export const add = mutation({
     coverUrl: v.optional(v.string()),
     isbn: v.optional(v.string()),
     firstPublishYear: v.optional(v.number()),
-    status: v.union(
-      v.literal("reading"),
-      v.literal("finished"),
-      v.literal("want-to-read")
-    ),
+    status: statusValidator,
   },
-  handler: async (ctx, { openLibraryKey, title, author, coverUrl, isbn, firstPublishYear, status }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new ConvexError("Not authenticated");
-    }
+  handler: async (
+    ctx,
+    { openLibraryKey, title, author, coverUrl, isbn, firstPublishYear, status },
+  ) => {
+    const userId = await getAuthUserId(ctx)
+    if (!userId) throw new ConvexError("Not authenticated")
 
     // Create or get book
-    let bookId;
     const existingBook = await ctx.db
       .query("books")
-      .withIndex("by_openLibraryKey", (q) => q.eq("openLibraryKey", openLibraryKey))
-      .first();
+      .withIndex("by_openLibraryKey", (q) =>
+        q.eq("openLibraryKey", openLibraryKey),
+      )
+      .first()
 
-    if (existingBook) {
-      bookId = existingBook._id;
-    } else {
-      bookId = await ctx.db.insert("books", {
-        openLibraryKey,
-        title,
-        author,
-        coverUrl,
-        isbn,
-        firstPublishYear,
-        stats: {
-          readersCount: 0,
-          wordsCount: 0,
-        },
-        createdAt: Date.now(),
-      });
-    }
+    const bookId = existingBook
+      ? existingBook._id
+      : await ctx.db.insert("books", {
+          openLibraryKey,
+          title,
+          author,
+          coverUrl,
+          isbn,
+          firstPublishYear,
+          stats: { readersCount: 0, wordsCount: 0 },
+          createdAt: Date.now(),
+        })
 
-    // Check if user already has this book
+    // Check duplicate
     const existingUserBook = await ctx.db
       .query("userBooks")
-      .withIndex("by_user_book", (q) => q.eq("userId", userId).eq("bookId", bookId))
-      .first();
+      .withIndex("by_user_book", (q) =>
+        q.eq("userId", userId).eq("bookId", bookId),
+      )
+      .first()
 
     if (existingUserBook) {
-      throw new ConvexError("Book already in your library");
+      throw new ConvexError("Book already in your library")
     }
 
-    // Create userBook relationship
+    // Create userBook with wordsCount initialized to 0
     const userBookId = await ctx.db.insert("userBooks", {
       userId,
       bookId,
       status,
-      notes: undefined,
+      wordsCount: 0,
       startedAt: status === "reading" ? Date.now() : undefined,
-      finishedAt: undefined,
       createdAt: Date.now(),
-    });
+    })
 
-    // Update book readers count
-    if (existingBook) {
-      await ctx.db.patch(bookId, {
-        stats: {
-          ...existingBook.stats,
-          readersCount: existingBook.stats.readersCount + 1,
-        },
-      });
-    } else {
-      await ctx.db.patch(bookId, {
-        stats: {
-          readersCount: 1,
-          wordsCount: 0,
-        },
-      });
-    }
+    // Increment book readers count
+    const book = existingBook ?? (await ctx.db.get(bookId))!
+    await ctx.db.patch(bookId, {
+      stats: {
+        ...book.stats,
+        readersCount: book.stats.readersCount + 1,
+      },
+    })
 
-    // Update user book count
-    const user = await ctx.db.get(userId);
+    // Increment user book count
+    const user = await ctx.db.get(userId)
     if (user) {
       await ctx.db.patch(userId, {
-        stats: {
-          ...user.stats,
-          booksCount: user.stats.booksCount + 1,
-        },
-      });
+        stats: { ...user.stats, booksCount: user.stats.booksCount + 1 },
+      })
     }
 
-    return userBookId;
+    return userBookId
   },
-});
+})
 
 // Update book status
 export const updateStatus = mutation({
   args: {
     userBookId: v.id("userBooks"),
-    status: v.union(
-      v.literal("reading"),
-      v.literal("finished"),
-      v.literal("want-to-read")
-    ),
+    status: statusValidator,
   },
   handler: async (ctx, { userBookId, status }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new ConvexError("Not authenticated");
-    }
+    const userId = await getAuthUserId(ctx)
+    if (!userId) throw new ConvexError("Not authenticated")
 
-    const userBook = await ctx.db.get(userBookId);
+    const userBook = await ctx.db.get(userBookId)
     if (!userBook || userBook.userId !== userId) {
-      throw new ConvexError("User book not found");
+      throw new ConvexError("User book not found")
     }
 
-    const updateData: any = { status };
+    const patch: Partial<Doc<"userBooks">> = { status }
 
     if (status === "reading" && userBook.status !== "reading") {
-      updateData.startedAt = Date.now();
+      patch.startedAt = Date.now()
     }
-
     if (status === "finished" && userBook.status !== "finished") {
-      updateData.finishedAt = Date.now();
+      patch.finishedAt = Date.now()
     }
 
-    await ctx.db.patch(userBookId, updateData);
-    return await ctx.db.get(userBookId);
+    await ctx.db.patch(userBookId, patch)
+    return await ctx.db.get(userBookId)
   },
-});
+})
 
 // Update book notes
 export const updateNotes = mutation({
@@ -145,147 +135,146 @@ export const updateNotes = mutation({
     notes: v.string(),
   },
   handler: async (ctx, { userBookId, notes }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new ConvexError("Not authenticated");
-    }
+    const userId = await getAuthUserId(ctx)
+    if (!userId) throw new ConvexError("Not authenticated")
 
-    const userBook = await ctx.db.get(userBookId);
+    const userBook = await ctx.db.get(userBookId)
     if (!userBook || userBook.userId !== userId) {
-      throw new ConvexError("User book not found");
+      throw new ConvexError("User book not found")
     }
 
-    await ctx.db.patch(userBookId, { notes });
-    return await ctx.db.get(userBookId);
+    await ctx.db.patch(userBookId, { notes })
+    return await ctx.db.get(userBookId)
   },
-});
+})
 
 // Remove book from user's profile
 export const remove = mutation({
   args: { userBookId: v.id("userBooks") },
   handler: async (ctx, { userBookId }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new ConvexError("Not authenticated");
-    }
+    const userId = await getAuthUserId(ctx)
+    if (!userId) throw new ConvexError("Not authenticated")
 
-    const userBook = await ctx.db.get(userBookId);
+    const userBook = await ctx.db.get(userBookId)
     if (!userBook || userBook.userId !== userId) {
-      throw new ConvexError("User book not found");
+      throw new ConvexError("User book not found")
     }
 
-    // Delete all words for this userBook
+    // Delete all words for this userBook + their likes
     const words = await ctx.db
       .query("words")
       .withIndex("by_userBook", (q) => q.eq("userBookId", userBookId))
-      .collect();
+      .collect()
 
     for (const word of words) {
-      await ctx.db.delete(word._id);
+      // Delete all likes for this word
+      const likes = await ctx.db
+        .query("wordLikes")
+        .withIndex("by_word", (q) => q.eq("wordId", word._id))
+        .collect()
+      for (const like of likes) {
+        await ctx.db.delete(like._id)
+      }
+      await ctx.db.delete(word._id)
     }
 
-    // Delete the userBook
-    await ctx.db.delete(userBookId);
+    await ctx.db.delete(userBookId)
 
-    // Update book readers count
-    const book = await ctx.db.get(userBook.bookId);
+    // Decrement book readers count + words count
+    const book = await ctx.db.get(userBook.bookId)
     if (book) {
       await ctx.db.patch(userBook.bookId, {
         stats: {
-          ...book.stats,
           readersCount: Math.max(0, book.stats.readersCount - 1),
+          wordsCount: Math.max(0, book.stats.wordsCount - words.length),
         },
-      });
+      })
     }
 
-    // Update user book count
-    const user = await ctx.db.get(userId);
+    // H1 FIX: Decrement user book count AND words count for all deleted words
+    const user = await ctx.db.get(userId)
     if (user) {
       await ctx.db.patch(userId, {
         stats: {
           ...user.stats,
           booksCount: Math.max(0, user.stats.booksCount - 1),
+          wordsCount: Math.max(0, user.stats.wordsCount - words.length),
         },
-      });
-    }
-  },
-});
-
-// Get user's books
-export const listMine = query({
-  args: { status: v.optional(v.string()) },
-  handler: async (ctx, { status }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return [];
-
-    let userBooksQuery = ctx.db.query("userBooks").withIndex("by_user", (q) => q.eq("userId", userId));
-    
-    const userBooks = await userBooksQuery.collect();
-    
-    const books = await Promise.all(
-      userBooks.map(async (userBook) => {
-        const book = await ctx.db.get(userBook.bookId);
-        const wordsCount = await ctx.db
-          .query("words")
-          .withIndex("by_userBook", (q) => q.eq("userBookId", userBook._id))
-          .collect()
-          .then(words => words.length);
-        
-        return {
-          userBook,
-          book,
-          wordsCount,
-        };
       })
-    );
+    }
+  },
+})
 
-    // Filter by status if provided
+// Get a single userBook by ID with its book data and word count
+export const getById = query({
+  args: { userBookId: v.id("userBooks") },
+  handler: async (ctx, { userBookId }) => {
+    const userId = await getAuthUserId(ctx)
+    if (!userId) return null
+
+    const userBook = await ctx.db.get(userBookId)
+    if (!userBook || userBook.userId !== userId) return null
+
+    return await enrichUserBook(ctx, userBook)
+  },
+})
+
+// Get user's books -- uses compound index for status filtering at DB level
+export const listMine = query({
+  args: { status: v.optional(statusValidator) },
+  handler: async (ctx, { status }) => {
+    const userId = await getAuthUserId(ctx)
+    if (!userId) return []
+
+    let userBooks: Doc<"userBooks">[]
+
     if (status) {
-      return books.filter(item => item.userBook.status === status);
+      // H3: Filter at DB level using compound index
+      userBooks = await ctx.db
+        .query("userBooks")
+        .withIndex("by_user_status", (q) =>
+          q.eq("userId", userId).eq("status", status),
+        )
+        .collect()
+    } else {
+      userBooks = await ctx.db
+        .query("userBooks")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect()
     }
 
-    return books;
+    return await Promise.all(userBooks.map((ub) => enrichUserBook(ctx, ub)))
   },
-});
+})
 
 // Get books for a specific user (public)
 export const listByUser = query({
-  args: { 
-    userId: v.id("users"), 
-    status: v.optional(v.string()) 
+  args: {
+    userId: v.id("users"),
+    status: v.optional(statusValidator),
   },
   handler: async (ctx, { userId, status }) => {
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db.get(userId)
     if (!user || !user.settings.publicProfile) {
-      return [];
+      return []
     }
 
-    let userBooksQuery = ctx.db.query("userBooks").withIndex("by_user", (q) => q.eq("userId", userId));
-    
-    const userBooks = await userBooksQuery.collect();
-    
-    const books = await Promise.all(
-      userBooks.map(async (userBook) => {
-        const book = await ctx.db.get(userBook.bookId);
-        const wordsCount = await ctx.db
-          .query("words")
-          .withIndex("by_userBook", (q) => q.eq("userBookId", userBook._id))
-          .collect()
-          .then(words => words.length);
-        
-        return {
-          userBook,
-          book,
-          wordsCount,
-        };
-      })
-    );
+    let userBooks: Doc<"userBooks">[]
 
-    // Filter by status if provided
     if (status) {
-      return books.filter(item => item.userBook.status === status);
+      userBooks = await ctx.db
+        .query("userBooks")
+        .withIndex("by_user_status", (q) =>
+          q.eq("userId", userId).eq("status", status),
+        )
+        .collect()
+    } else {
+      userBooks = await ctx.db
+        .query("userBooks")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect()
     }
 
-    return books;
+    return await Promise.all(userBooks.map((ub) => enrichUserBook(ctx, ub)))
   },
-});
+})

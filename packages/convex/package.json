@@ -3,18 +3,39 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "./convex/_generated/api.js",
+  "types": "./convex/_generated/api.d.ts",
+  "exports": {
+    ".": {
+      "types": "./convex/_generated/api.d.ts",
+      "import": "./convex/_generated/api.js",
+      "default": "./convex/_generated/api.js"
+    },
+    "./dataModel": {
+      "types": "./convex/_generated/dataModel.d.ts",
+      "import": "./convex/_generated/dataModel.js",
+      "default": "./convex/_generated/dataModel.js"
+    }
+  },
   "scripts": {
+    "clean": "git clean -xdf .convex node_modules",
     "dev": "convex dev",
     "deploy": "convex deploy",
-    "clear": "convex run clearAll:clearAll"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@auth/core": "^0.37.0",
     "@convex-dev/auth": "^0.0.90",
+    "@convex-dev/ratelimiter": "^0.1.7",
     "convex": "^1.31.0"
   },
   "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
+    "@types/node": "^20",
+    "convex-test": "^0.0.41",
     "typescript": "^5",
-    "@types/node": "^20"
+    "vitest": "^4.0.18"
   }
 }

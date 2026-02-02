@@ -3,23 +3,29 @@
   "type": "module",
   "private": true,
   "workspaces": [
+    "tooling/*",
     "packages/convex",
-    "apps/mobile",
-    "tooling/typescript"
+    "apps/mobile"
   ],
   "scripts": {
-    "dev": "cd apps/mobile && bun run dev",
-    "dev:web": "cd apps/mobile && bun run dev:web",
-    "build": "cd apps/mobile && bun run build",
-    "clean": "git clean -xdf node_modules dist .expo .convex",
-    "convex:dev": "cd packages/convex && bunx convex dev",
-    "convex:deploy": "cd packages/convex && bunx convex deploy",
-    "typecheck": "bun run typecheck:convex && bun run typecheck:mobile",
-    "typecheck:convex": "cd packages/convex && bunx tsc --noEmit",
-    "typecheck:mobile": "cd apps/mobile && bunx tsc --noEmit"
+    "dev": "bun run --filter='@reread/mobile' dev",
+    "dev:ios": "bun run --filter='@reread/mobile' dev:ios",
+    "dev:android": "bun run --filter='@reread/mobile' dev:android",
+    "android": "bun run --filter='@reread/mobile' android",
+    "ios": "bun run --filter='@reread/mobile' ios",
+    "clean": "git clean -xdf node_modules",
+    "clean:workspaces": "bun run --filter='*' clean",
+    "convex:dev": "bun run --filter='@reread/convex' dev",
+    "convex:deploy": "bun run --filter='@reread/convex' deploy",
+    "typecheck": "bun run --filter='@reread/mobile' typecheck",
+    "format": "nix fmt",
+    "test": "bun run --filter='@reread/convex' test"
+  },
+  "overrides": {
+    "lightningcss": "1.30.1"
   },
   "devDependencies": {
-    "@types/bun": "latest",
+    "@types/bun": "^1.2.0",
     "typescript": "^5"
   }
 }
