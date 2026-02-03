@@ -1,21 +1,31 @@
 import { Ionicons } from "@expo/vector-icons"
 import { Tabs } from "expo-router"
-import { ACCENT } from "../../lib/constants"
+import { COLORS } from "../../lib/constants"
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: ACCENT,
-        tabBarInactiveTintColor: "#9ca3af",
-        tabBarLabelStyle: { fontSize: 11, fontWeight: "500" },
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.textTertiary,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
+        tabBarStyle: {
+          borderTopColor: COLORS.border,
+        },
+        headerShadowVisible: false,
+        headerStyle: { backgroundColor: COLORS.surface },
+        headerTitleStyle: {
+          fontSize: 17,
+          fontWeight: "600",
+          color: COLORS.textPrimary,
+        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
-          tabBarLabel: "Home",
+          title: "Library",
+          tabBarLabel: "Library",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="library-outline" size={size} color={color} />
           ),
@@ -32,19 +42,9 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="books"
-        options={{
-          title: "My Books",
-          tabBarLabel: "Books",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="words"
         options={{
-          title: "My Words",
+          title: "Words",
           tabBarLabel: "Words",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="text-outline" size={size} color={color} />
@@ -61,6 +61,8 @@ export default function TabsLayout() {
           ),
         }}
       />
+      {/* Hide the old books tab -- it's merged into index */}
+      <Tabs.Screen name="books" options={{ href: null }} />
     </Tabs>
   )
 }

@@ -1,11 +1,12 @@
+import { Ionicons } from "@expo/vector-icons"
 import type { Doc } from "@reread/convex/dataModel"
 import { useMutation, useQuery } from "convex/react"
+import { router } from "expo-router"
 import { useCallback, useState } from "react"
 import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -15,31 +16,31 @@ import {
   TouchableOpacity,
   View,
 } from "react-native"
-import type { Id } from "../../lib/api"
-import { api } from "../../lib/api"
-import { ACCENT, type ReadingStatus, STATUS_CONFIG } from "../../lib/constants"
+import { BookCover, EmptyState, StatusBadge } from "~/components"
+import type { Id } from "~/lib/api"
+import { api } from "~/lib/api"
+import { COLORS, type ReadingStatus, STATUS_CONFIG } from "~/lib/constants"
 
 type StatusFilter = "all" | ReadingStatus
 
-const STATUS_EMOJIS: Record<ReadingStatus, string> = {
-  reading: "📖",
-  finished: "✅",
-  "want-to-read": "📋",
-}
-
-// Return type of userBooks.listMine query - uses Convex generated types
 type MyBookItem = {
   userBook: Doc<"userBooks">
   book: Doc<"books"> | null
   wordsCount: number
 }
 
-export default function Home() {
+const FILTERS: { key: StatusFilter; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "reading", label: "Reading" },
+  { key: "finished", label: "Finished" },
+  { key: "want-to-read", label: "Want to Read" },
+]
+
+export default function Library() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
+  const [showAddWord, setShowAddWord] = useState(false)
   const [selectedUserBookId, setSelectedUserBookId] =
     useState<Id<"userBooks"> | null>(null)
-  const [showAddWord, setShowAddWord] = useState(false)
-  const [showWords, setShowWords] = useState(false)
   const [wordForm, setWordForm] = useState({
     word: "",
     definition: "",
@@ -50,14 +51,7 @@ export default function Home() {
   const myBooks = useQuery(api.userBooks.listMine, {
     status: statusFilter === "all" ? undefined : statusFilter,
   })
-  const words = useQuery(
-    api.words.listByUserBook,
-    selectedUserBookId && showWords
-      ? { userBookId: selectedUserBookId }
-      : "skip",
-  )
   const addWord = useMutation(api.words.add)
-  const removeWord = useMutation(api.words.remove)
   const removeBook = useMutation(api.userBooks.remove)
   const updateStatus = useMutation(api.userBooks.updateStatus)
 
@@ -66,16 +60,15 @@ export default function Home() {
     try {
       await addWord({
         userBookId: selectedUserBookId,
-        word: wordForm.word,
-        definition: wordForm.definition || undefined,
-        context: wordForm.context || undefined,
+        word: wordForm.word.trim(),
+        definition: wordForm.definition.trim() || undefined,
+        context: wordForm.context.trim() || undefined,
         pageNumber: wordForm.pageNumber
           ? parseInt(wordForm.pageNumber)
           : undefined,
       })
       setWordForm({ word: "", definition: "", context: "", pageNumber: "" })
       setShowAddWord(false)
-      Alert.alert("Saved!", `"${wordForm.word}" added.`)
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : "Failed to add word"
       Alert.alert("Error", msg)
@@ -83,29 +76,23 @@ export default function Home() {
   }, [selectedUserBookId, wordForm, addWord])
 
   const handleRemoveBook = useCallback(
-    async (userBookId: Id<"userBooks">, title: string) => {
-      Alert.alert(
-        "Remove Book",
-        `Remove "${title}" from your library? This will delete all saved words for this book.`,
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Remove",
-            style: "destructive",
-            onPress: async () => {
-              try {
-                await removeBook({ userBookId })
-              } catch (error: unknown) {
-                const msg =
-                  error instanceof Error
-                    ? error.message
-                    : "Failed to remove book"
-                Alert.alert("Error", msg)
-              }
-            },
+    (userBookId: Id<"userBooks">, title: string) => {
+      Alert.alert("Remove Book", `Remove "${title}" and all its saved words?`, [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await removeBook({ userBookId })
+            } catch (error: unknown) {
+              const msg =
+                error instanceof Error ? error.message : "Failed to remove book"
+              Alert.alert("Error", msg)
+            }
           },
-        ],
-      )
+        },
+      ])
     },
     [removeBook],
   )
@@ -123,133 +110,147 @@ export default function Home() {
     [updateStatus],
   )
 
-  const renderBookItem = ({ item }: { item: MyBookItem }) => {
-    const { userBook, book, wordsCount } = item
-    if (!book) return null
-    const status = STATUS_CONFIG[userBook.status]
-    const emoji = STATUS_EMOJIS[userBook.status]
+  const renderBookItem = useCallback(
+    ({ item }: { item: MyBookItem }) => {
+      const { userBook, book, wordsCount } = item
+      if (!book) return null
 
-    return (
-      <View className="mb-3 rounded-xl border border-gray-100 bg-white p-3">
+      return (
         <TouchableOpacity
-          className="flex-row items-center"
-          onPress={() => {
-            setSelectedUserBookId(userBook._id)
-            setShowWords(true)
-          }}
+          className="mx-4 mb-3 rounded-2xl bg-surface p-4 shadow-sm"
+          onPress={() => router.push(`/book/${userBook._id}`)}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`${book.title} by ${book.author}`}
         >
-          {book.coverUrl ? (
-            <Image
-              source={{ uri: book.coverUrl }}
-              className="h-20 w-14 rounded-md"
-            />
-          ) : (
-            <View className="h-20 w-14 items-center justify-center rounded-md bg-gray-200">
-              <Text className="text-2xl">📖</Text>
-            </View>
-          )}
-          <View className="ml-3 flex-1">
-            <Text
-              className="text-base font-semibold text-gray-900"
-              numberOfLines={2}
-            >
-              {book.title}
-            </Text>
-            <Text className="mt-0.5 text-sm text-gray-500" numberOfLines={1}>
-              {book.author}
-            </Text>
-            <View className="mt-1.5 flex-row items-center gap-2">
-              <View
-                className="rounded-xl px-2 py-[3px]"
-                style={{ backgroundColor: status.color + "20" }}
+          <View className="flex-row">
+            <BookCover coverUrl={book.coverUrl} size="md" />
+
+            <View className="ml-3 flex-1">
+              <Text
+                className="text-base font-semibold text-text-primary"
+                numberOfLines={2}
               >
-                <Text
-                  className="text-xs font-medium"
-                  style={{ color: status.color }}
-                >
-                  {emoji} {status.label}
+                {book.title}
+              </Text>
+              <Text
+                className="mt-0.5 text-sm text-text-secondary"
+                numberOfLines={1}
+              >
+                {book.author}
+              </Text>
+
+              <View className="mt-2 flex-row items-center gap-2">
+                <StatusBadge status={userBook.status} />
+                <Text className="text-xs text-text-tertiary">
+                  {wordsCount} {wordsCount === 1 ? "word" : "words"}
                 </Text>
               </View>
-              <Text className="text-xs text-gray-400">
-                {wordsCount} word{wordsCount !== 1 ? "s" : ""}
-              </Text>
             </View>
           </View>
-        </TouchableOpacity>
 
-        <View className="mt-2.5 flex-row items-center gap-2 border-t border-gray-100 pt-2.5">
-          {/* Status quick-change */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {(Object.keys(STATUS_CONFIG) as ReadingStatus[]).map((key) => {
-              const val = STATUS_CONFIG[key]
-              return (
-                <TouchableOpacity
-                  key={key}
-                  className="mr-1.5 h-8 w-8 items-center justify-center rounded-full border border-gray-200"
-                  style={
-                    userBook.status === key
-                      ? {
-                          backgroundColor: val.color + "30",
-                          borderColor: val.color,
-                        }
-                      : undefined
-                  }
-                  onPress={() => handleStatusChange(userBook._id, key)}
-                >
-                  <Text
-                    className="text-sm"
-                    style={
-                      userBook.status === key ? { color: val.color } : undefined
-                    }
+          {/* Actions */}
+          <View className="mt-3 flex-row items-center gap-2 border-t border-border pt-3">
+            {/* Status quick-change */}
+            <View className="flex-row gap-1.5">
+              {(Object.keys(STATUS_CONFIG) as ReadingStatus[]).map((key) => {
+                const isActive = userBook.status === key
+                const color = STATUS_CONFIG[key].color
+                const lightColor = STATUS_CONFIG[key].lightColor
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    className="h-9 w-9 items-center justify-center rounded-full"
+                    style={{
+                      backgroundColor: isActive
+                        ? lightColor
+                        : COLORS.surfaceSecondary,
+                      borderWidth: isActive ? 1.5 : 0,
+                      borderColor: isActive ? color : "transparent",
+                    }}
+                    onPress={() => handleStatusChange(userBook._id, key)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Set status to ${STATUS_CONFIG[key].label}`}
                   >
-                    {STATUS_EMOJIS[key]}
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
-          </ScrollView>
+                    <Ionicons
+                      name={
+                        key === "reading"
+                          ? "book"
+                          : key === "finished"
+                            ? "checkmark-circle"
+                            : "bookmark"
+                      }
+                      size={16}
+                      color={isActive ? color : COLORS.textTertiary}
+                    />
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
 
-          <TouchableOpacity
-            className="ml-auto rounded-lg bg-indigo-500 px-3 py-1.5"
-            onPress={() => {
-              setSelectedUserBookId(userBook._id)
-              setShowAddWord(true)
-            }}
-          >
-            <Text className="text-[13px] font-semibold text-white">+ Word</Text>
-          </TouchableOpacity>
+            {/* Add word button */}
+            <TouchableOpacity
+              className="ml-auto flex-row items-center gap-1 rounded-xl bg-primary px-3 py-2"
+              onPress={() => {
+                setSelectedUserBookId(userBook._id)
+                setShowAddWord(true)
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Add a word"
+            >
+              <Ionicons name="add" size={16} color={COLORS.textInverse} />
+              <Text className="text-xs font-semibold text-text-inverse">
+                Word
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => handleRemoveBook(userBook._id, book.title)}
-          >
-            <Text className="px-1 text-lg">🗑</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    )
-  }
+            {/* Delete book */}
+            <TouchableOpacity
+              className="h-9 w-9 items-center justify-center rounded-full"
+              onPress={() => handleRemoveBook(userBook._id, book.title)}
+              accessibilityRole="button"
+              accessibilityLabel={`Remove ${book.title}`}
+            >
+              <Ionicons
+                name="trash-outline"
+                size={18}
+                color={COLORS.textTertiary}
+              />
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      )
+    },
+    [handleStatusChange, handleRemoveBook],
+  )
 
   return (
-    <View className="flex-1 bg-white">
-      {/* Filter tabs */}
+    <View className="flex-1 bg-surface-secondary">
+      {/* Filter chips */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        className="flex-grow-0 px-3 py-2"
+        className="flex-grow-0 border-b border-border bg-surface"
+        contentContainerClassName="px-4 py-3 gap-2"
       >
-        {(["all", "reading", "finished", "want-to-read"] as const).map((s) => (
+        {FILTERS.map((f) => (
           <TouchableOpacity
-            key={s}
-            className={`mr-2 rounded-full px-3.5 py-2 ${statusFilter === s ? "bg-indigo-500" : "bg-gray-100"}`}
-            onPress={() => setStatusFilter(s)}
+            key={f.key}
+            className={`rounded-full px-4 py-2 ${
+              statusFilter === f.key ? "bg-primary" : "bg-surface-secondary"
+            }`}
+            onPress={() => setStatusFilter(f.key)}
+            accessibilityRole="button"
+            accessibilityLabel={`Filter by ${f.label}`}
           >
             <Text
-              className={`text-sm ${statusFilter === s ? "font-semibold text-white" : "text-gray-500"}`}
+              className={`text-sm font-medium ${
+                statusFilter === f.key
+                  ? "text-text-inverse"
+                  : "text-text-secondary"
+              }`}
             >
-              {s === "all"
-                ? "📚 All"
-                : `${STATUS_EMOJIS[s]} ${STATUS_CONFIG[s].label}`}
+              {f.label}
             </Text>
           </TouchableOpacity>
         ))}
@@ -258,26 +259,27 @@ export default function Home() {
       {/* Book list */}
       {myBooks === undefined ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={ACCENT} />
+          <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
       ) : myBooks.length === 0 ? (
-        <View className="flex-1 items-center justify-center">
-          <Text className="mb-3 text-5xl">📚</Text>
-          <Text className="text-xl font-bold text-gray-900">
-            {statusFilter === "all"
-              ? "No Books Yet"
-              : `No ${STATUS_CONFIG[statusFilter].label} Books`}
-          </Text>
-          <Text className="mt-1 px-10 text-center text-sm text-gray-500">
-            Search for books to add them to your library
-          </Text>
-        </View>
+        <EmptyState
+          icon="library-outline"
+          title={
+            statusFilter === "all"
+              ? "No books yet"
+              : `No ${FILTERS.find((f) => f.key === statusFilter)?.label?.toLowerCase()} books`
+          }
+          subtitle="Search for books to start building your library"
+          actionLabel="Search Books"
+          onAction={() => router.push("/(tabs)/search")}
+        />
       ) : (
         <FlatList
           data={myBooks}
           keyExtractor={(item) => item.userBook._id}
           renderItem={renderBookItem}
-          contentContainerClassName="px-4 pb-5"
+          contentContainerClassName="pt-3 pb-6"
+          showsVerticalScrollIndicator={false}
         />
       )}
 
@@ -293,30 +295,33 @@ export default function Home() {
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
           <TouchableOpacity
-            className="flex-1 justify-end bg-black/50"
+            className="flex-1 justify-end bg-black/40"
             activeOpacity={1}
             onPress={() => setShowAddWord(false)}
           >
             <View
-              className="max-h-[80%] rounded-t-2xl bg-white p-6"
+              className="rounded-t-3xl bg-surface px-5 pb-10 pt-6"
               onStartShouldSetResponder={() => true}
             >
-              <Text className="mb-4 text-xl font-bold text-gray-900">
+              {/* Handle bar */}
+              <View className="mb-5 self-center h-1 w-10 rounded-full bg-border-strong" />
+
+              <Text className="mb-5 text-xl font-bold text-text-primary">
                 Add a Word
               </Text>
 
               <TextInput
-                className="mb-3 rounded-xl border border-gray-200 p-3 text-base text-gray-900"
+                className="mb-3 rounded-xl border border-border-strong bg-surface px-4 py-3 text-base text-text-primary"
                 placeholder="Word *"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={COLORS.textTertiary}
                 value={wordForm.word}
                 onChangeText={(t) => setWordForm((f) => ({ ...f, word: t }))}
                 autoCapitalize="none"
               />
               <TextInput
-                className="mb-3 rounded-xl border border-gray-200 p-3 text-base text-gray-900"
+                className="mb-3 rounded-xl border border-border-strong bg-surface px-4 py-3 text-base text-text-primary"
                 placeholder="Definition"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={COLORS.textTertiary}
                 value={wordForm.definition}
                 onChangeText={(t) =>
                   setWordForm((f) => ({ ...f, definition: t }))
@@ -324,17 +329,17 @@ export default function Home() {
                 multiline
               />
               <TextInput
-                className="mb-3 rounded-xl border border-gray-200 p-3 text-base text-gray-900"
+                className="mb-3 rounded-xl border border-border-strong bg-surface px-4 py-3 text-base text-text-primary"
                 placeholder="Context (sentence from book)"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={COLORS.textTertiary}
                 value={wordForm.context}
                 onChangeText={(t) => setWordForm((f) => ({ ...f, context: t }))}
                 multiline
               />
               <TextInput
-                className="mb-3 rounded-xl border border-gray-200 p-3 text-base text-gray-900"
+                className="mb-4 rounded-xl border border-border-strong bg-surface px-4 py-3 text-base text-text-primary"
                 placeholder="Page number"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={COLORS.textTertiary}
                 value={wordForm.pageNumber}
                 onChangeText={(t) =>
                   setWordForm((f) => ({ ...f, pageNumber: t }))
@@ -343,114 +348,27 @@ export default function Home() {
               />
 
               <TouchableOpacity
-                className="mt-1 items-center rounded-xl bg-indigo-500 p-3.5"
-                style={!wordForm.word.trim() ? { opacity: 0.5 } : undefined}
+                className="items-center rounded-xl bg-primary py-4"
+                style={!wordForm.word.trim() ? { opacity: 0.4 } : undefined}
                 onPress={handleAddWord}
                 disabled={!wordForm.word.trim()}
+                accessibilityRole="button"
               >
-                <Text className="text-base font-semibold text-white">
+                <Text className="text-base font-semibold text-text-inverse">
                   Save Word
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="mt-1 items-center p-3"
+                className="mt-2 items-center py-3"
                 onPress={() => setShowAddWord(false)}
+                accessibilityRole="button"
               >
-                <Text className="text-base text-gray-500">Cancel</Text>
+                <Text className="text-base text-text-secondary">Cancel</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
         </KeyboardAvoidingView>
-      </Modal>
-
-      {/* Words List Modal */}
-      <Modal
-        visible={showWords}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowWords(false)}
-      >
-        <View className="mt-[60px] flex-1 rounded-t-2xl bg-white">
-          <View className="flex-row items-center justify-between border-b border-gray-100 p-4">
-            <Text className="text-xl font-bold text-gray-900">Words</Text>
-            <TouchableOpacity onPress={() => setShowWords(false)}>
-              <Text className="p-1 text-xl text-gray-500">✕</Text>
-            </TouchableOpacity>
-          </View>
-
-          {words === undefined ? (
-            <ActivityIndicator size="large" color={ACCENT} className="mt-10" />
-          ) : words.length === 0 ? (
-            <View className="flex-1 items-center justify-center">
-              <Text className="mb-3 text-5xl">📝</Text>
-              <Text className="text-xl font-bold text-gray-900">
-                No Words Yet
-              </Text>
-              <Text className="mt-1 px-10 text-center text-sm text-gray-500">
-                Tap "+ Word" on a book to start collecting
-              </Text>
-            </View>
-          ) : (
-            <FlatList
-              data={words}
-              keyExtractor={(item) => item._id}
-              renderItem={({ item }) => (
-                <View className="mb-2.5 rounded-xl bg-gray-50 p-3.5">
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-lg font-bold text-gray-900">
-                      {item.word}
-                    </Text>
-                    {item.pageNumber && (
-                      <Text className="text-xs text-gray-400">
-                        p. {item.pageNumber}
-                      </Text>
-                    )}
-                  </View>
-                  {item.definition && (
-                    <Text className="mt-1.5 text-sm text-gray-700">
-                      {item.definition}
-                    </Text>
-                  )}
-                  {item.context && (
-                    <Text className="mt-1 text-[13px] italic text-gray-500">
-                      "{item.context}"
-                    </Text>
-                  )}
-                  <TouchableOpacity
-                    onPress={() => {
-                      Alert.alert("Delete Word", `Delete "${item.word}"?`, [
-                        { text: "Cancel", style: "cancel" },
-                        {
-                          text: "Delete",
-                          style: "destructive",
-                          onPress: () => removeWord({ wordId: item._id }),
-                        },
-                      ])
-                    }}
-                  >
-                    <Text className="mt-2 text-[13px] text-red-500">
-                      Delete
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-              contentContainerClassName="p-4"
-            />
-          )}
-
-          <TouchableOpacity
-            className="absolute bottom-[30px] right-5 rounded-3xl bg-indigo-500 px-5 py-3 shadow-md elevation-4"
-            onPress={() => {
-              setShowWords(false)
-              setShowAddWord(true)
-            }}
-          >
-            <Text className="text-base font-semibold text-white">
-              + Add Word
-            </Text>
-          </TouchableOpacity>
-        </View>
       </Modal>
     </View>
   )

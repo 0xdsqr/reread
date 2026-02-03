@@ -1,4 +1,6 @@
 export { BookCover } from "./BookCover"
 export { EmptyState } from "./EmptyState"
+export { ErrorBoundary } from "./ErrorBoundary"
+export { OfflineBanner } from "./OfflineBanner"
 export { StatusBadge } from "./StatusBadge"
 export { WordCard } from "./WordCard"

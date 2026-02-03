@@ -1,7 +1,8 @@
 import { useAuthActions } from "@convex-dev/auth/react"
 import { Link } from "expo-router"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -11,19 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native"
-
-function extractErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    const convexError = error as Error & { data?: string }
-    if (convexError.data) return convexError.data
-    const msg = error.message
-    if (msg.includes("already exists") || msg.includes("unique"))
-      return "An account with that email already exists."
-    if (msg.includes("password")) return "Password does not meet requirements."
-    return msg
-  }
-  return "Something went wrong. Please try again."
-}
+import { COLORS, extractAuthError } from "~/lib/constants"
 
 export default function SignUp() {
   const { signIn } = useAuthActions()
@@ -32,6 +21,9 @@ export default function SignUp() {
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
+  const emailRef = useRef<TextInput>(null)
+  const passwordRef = useRef<TextInput>(null)
+
   const handleSignUp = async () => {
     if (!username || !email || !password) {
       Alert.alert("Error", "Please fill in all fields")
@@ -39,7 +31,7 @@ export default function SignUp() {
     }
 
     if (password.length < 8) {
-      Alert.alert("Error", "Password must be at least 8 characters long")
+      Alert.alert("Error", "Password must be at least 8 characters")
       return
     }
 
@@ -47,7 +39,7 @@ export default function SignUp() {
     try {
       await signIn("password", { email, password, username, flow: "signUp" })
     } catch (error: unknown) {
-      Alert.alert("Sign Up Failed", extractErrorMessage(error))
+      Alert.alert("Sign Up Failed", extractAuthError(error))
     } finally {
       setIsLoading(false)
     }
@@ -55,54 +47,67 @@ export default function SignUp() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-white"
+      className="flex-1 bg-surface"
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
-        contentContainerClassName="flex-grow justify-center p-5"
+        contentContainerClassName="flex-grow justify-center px-6 py-10"
         keyboardShouldPersistTaps="handled"
       >
-        <Text className="mb-10 text-center text-[32px] font-bold text-gray-900">
+        <Text className="mb-2 text-center text-3xl font-bold text-text-primary">
           Create Account
+        </Text>
+        <Text className="mb-10 text-center text-base text-text-secondary">
+          Start building your vocabulary
         </Text>
 
         <View className="mb-4">
-          <Text className="mb-2 text-base text-gray-700">Username</Text>
+          <Text className="mb-2 text-sm font-medium text-text-secondary">
+            Username
+          </Text>
           <TextInput
-            className="rounded-lg border border-gray-300 p-3 text-base text-gray-900"
+            className="rounded-xl border border-border-strong px-4 py-3.5 text-base text-text-primary"
             value={username}
             onChangeText={setUsername}
             placeholder="Choose a username"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={COLORS.textTertiary}
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="next"
+            onSubmitEditing={() => emailRef.current?.focus()}
           />
         </View>
 
         <View className="mb-4">
-          <Text className="mb-2 text-base text-gray-700">Email</Text>
+          <Text className="mb-2 text-sm font-medium text-text-secondary">
+            Email
+          </Text>
           <TextInput
-            className="rounded-lg border border-gray-300 p-3 text-base text-gray-900"
+            ref={emailRef}
+            className="rounded-xl border border-border-strong px-4 py-3.5 text-base text-text-primary"
             value={email}
             onChangeText={setEmail}
-            placeholder="Enter your email"
-            placeholderTextColor="#9ca3af"
+            placeholder="your@email.com"
+            placeholderTextColor={COLORS.textTertiary}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
           />
         </View>
 
-        <View className="mb-4">
-          <Text className="mb-2 text-base text-gray-700">Password</Text>
+        <View className="mb-6">
+          <Text className="mb-2 text-sm font-medium text-text-secondary">
+            Password
+          </Text>
           <TextInput
-            className="rounded-lg border border-gray-300 p-3 text-base text-gray-900"
+            ref={passwordRef}
+            className="rounded-xl border border-border-strong px-4 py-3.5 text-base text-text-primary"
             value={password}
             onChangeText={setPassword}
-            placeholder="Create a password (8+ characters)"
-            placeholderTextColor="#9ca3af"
+            placeholder="8+ characters"
+            placeholderTextColor={COLORS.textTertiary}
             secureTextEntry
             returnKeyType="go"
             onSubmitEditing={handleSignUp}
@@ -110,22 +115,25 @@ export default function SignUp() {
         </View>
 
         <TouchableOpacity
-          className={`mt-2 mb-4 items-center rounded-lg p-4 ${isLoading ? "bg-gray-400" : "bg-indigo-500"}`}
+          className="mb-5 items-center rounded-xl bg-primary py-4"
+          style={isLoading ? { opacity: 0.7 } : undefined}
           onPress={handleSignUp}
           disabled={isLoading}
+          accessibilityRole="button"
         >
-          <Text className="text-base font-semibold text-white">
-            {isLoading ? "Creating account..." : "Sign Up"}
-          </Text>
+          {isLoading ? (
+            <ActivityIndicator size="small" color={COLORS.textInverse} />
+          ) : (
+            <Text className="text-base font-semibold text-text-inverse">
+              Create Account
+            </Text>
+          )}
         </TouchableOpacity>
 
         <View className="items-center">
-          <Text className="text-gray-500">
+          <Text className="text-sm text-text-secondary">
             Already have an account?{" "}
-            <Link
-              href="/(auth)/sign-in"
-              className="font-semibold text-indigo-500"
-            >
+            <Link href="/(auth)/sign-in" className="font-semibold text-primary">
               Sign in
             </Link>
           </Text>

@@ -1,13 +1,17 @@
 import { useAuthActions } from "@convex-dev/auth/react"
+import { Ionicons } from "@expo/vector-icons"
 import { useQuery } from "convex/react"
+import { router } from "expo-router"
 import {
   ActivityIndicator,
-  FlatList,
+  ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native"
-import { api } from "../../lib/api"
+import { EmptyState } from "~/components"
+import { api } from "~/lib/api"
+import { COLORS, formatDate } from "~/lib/constants"
 
 export default function Profile() {
   const user = useQuery(api.users.getMe)
@@ -16,115 +20,146 @@ export default function Profile() {
 
   if (user === undefined) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator size="large" color="#6366f1" />
+      <View className="flex-1 items-center justify-center bg-surface">
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     )
   }
 
   if (!user) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <Text className="text-xl font-bold text-gray-900">Not signed in</Text>
-      </View>
+      <EmptyState
+        icon="person-outline"
+        title="Not signed in"
+        subtitle="Please sign in to view your profile"
+      />
     )
   }
 
+  const recentWords = (allWords ?? []).slice(0, 15)
+  const stats = [
+    {
+      label: "Books",
+      value: user.stats?.booksCount ?? 0,
+      icon: "library-outline" as const,
+    },
+    {
+      label: "Words",
+      value: user.stats?.wordsCount ?? 0,
+      icon: "text-outline" as const,
+    },
+    {
+      label: "Streak",
+      value: user.stats?.currentStreak ?? 0,
+      icon: "flame-outline" as const,
+    },
+  ]
+
   return (
-    <View className="flex-1 bg-white">
+    <ScrollView className="flex-1 bg-surface-secondary">
       {/* Profile header */}
-      <View className="items-center pb-4 pt-6">
-        <View className="mb-3 h-[72px] w-[72px] items-center justify-center rounded-full bg-indigo-500">
-          <Text className="text-[28px] font-bold text-white">
+      <View className="items-center bg-surface px-6 pb-6 pt-8">
+        <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-primary">
+          <Text className="text-3xl font-bold text-text-inverse">
             {(user.username || user.email || "?")[0]?.toUpperCase()}
           </Text>
         </View>
-        <Text className="text-xl font-bold text-gray-900">
+        <Text className="text-xl font-bold text-text-primary">
           {user.username || user.email}
         </Text>
         {user.bio && (
-          <Text className="mt-1 px-10 text-center text-sm text-gray-500">
+          <Text className="mt-1 text-center text-sm text-text-secondary">
             {user.bio}
           </Text>
         )}
       </View>
 
-      {/* Stats row */}
-      <View className="mx-6 flex-row items-center justify-center border-y border-gray-100 py-4">
-        <View className="flex-1 items-center">
-          <Text className="text-[22px] font-bold text-gray-900">
-            {user.stats?.booksCount ?? 0}
-          </Text>
-          <Text className="mt-0.5 text-xs text-gray-500">Books</Text>
-        </View>
-        <View className="h-8 w-px bg-gray-200" />
-        <View className="flex-1 items-center">
-          <Text className="text-[22px] font-bold text-gray-900">
-            {user.stats?.wordsCount ?? 0}
-          </Text>
-          <Text className="mt-0.5 text-xs text-gray-500">Words</Text>
-        </View>
-        <View className="h-8 w-px bg-gray-200" />
-        <View className="flex-1 items-center">
-          <Text className="text-[22px] font-bold text-gray-900">
-            {user.stats?.currentStreak ?? 0}
-          </Text>
-          <Text className="mt-0.5 text-xs text-gray-500">Day Streak</Text>
-        </View>
+      {/* Stats */}
+      <View className="mx-4 -mt-1 mb-4 flex-row rounded-2xl bg-surface p-4 shadow-sm">
+        {stats.map((stat, i) => (
+          <View key={stat.label} className="flex-1 items-center">
+            {i > 0 && (
+              <View className="absolute left-0 top-1 bottom-1 w-px bg-border" />
+            )}
+            <Ionicons name={stat.icon} size={20} color={COLORS.primary} />
+            <Text className="mt-1 text-2xl font-bold text-text-primary">
+              {stat.value}
+            </Text>
+            <Text className="mt-0.5 text-xs text-text-secondary">
+              {stat.label}
+            </Text>
+          </View>
+        ))}
       </View>
 
       {/* Recent words */}
-      <View className="flex-1 px-4 pt-4">
-        <Text className="mb-3 text-lg font-bold text-gray-900">
-          Recent Words
-        </Text>
+      <View className="mx-4 mb-4 rounded-2xl bg-surface p-4 shadow-sm">
+        <View className="mb-3 flex-row items-center justify-between">
+          <Text className="text-base font-bold text-text-primary">
+            Recent Words
+          </Text>
+          {(allWords?.length ?? 0) > 0 && (
+            <TouchableOpacity
+              onPress={() => router.push("/(tabs)/words")}
+              accessibilityRole="button"
+            >
+              <Text className="text-sm font-medium text-primary">See All</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
         {allWords === undefined ? (
-          <ActivityIndicator size="small" color="#6366f1" />
+          <ActivityIndicator size="small" color={COLORS.primary} />
         ) : allWords.length === 0 ? (
-          <View className="items-center p-5">
-            <Text className="text-center text-sm text-gray-400">
-              No words saved yet. Start reading and add words from your books!
+          <View className="items-center py-4">
+            <Text className="text-center text-sm text-text-tertiary">
+              No words saved yet. Start reading!
             </Text>
           </View>
         ) : (
-          <FlatList
-            data={allWords.slice(0, 20)}
-            keyExtractor={(item) => item._id}
-            scrollEnabled={false}
-            renderItem={({ item }) => (
-              <View className="flex-row items-center justify-between border-b border-gray-100 py-2.5">
-                <View className="flex-1">
-                  <Text className="text-base font-semibold text-gray-900">
-                    {item.word}
+          recentWords.map((item, i) => (
+            <View
+              key={item._id}
+              className={`flex-row items-center justify-between py-3 ${
+                i < recentWords.length - 1 ? "border-b border-border" : ""
+              }`}
+            >
+              <View className="flex-1 mr-3">
+                <Text className="text-base font-semibold text-text-primary">
+                  {item.word}
+                </Text>
+                {item.definition && (
+                  <Text
+                    className="mt-0.5 text-sm text-text-secondary"
+                    numberOfLines={1}
+                  >
+                    {item.definition}
                   </Text>
-                  {item.definition && (
-                    <Text
-                      className="mt-0.5 text-[13px] text-gray-500"
-                      numberOfLines={1}
-                    >
-                      {item.definition}
-                    </Text>
-                  )}
-                </View>
-                <Text
-                  className="max-w-[120px] text-right text-xs text-gray-400"
-                  numberOfLines={1}
-                >
+                )}
+              </View>
+              <View className="items-end">
+                <Text className="text-xs text-text-tertiary" numberOfLines={1}>
                   {item.bookTitle}
                 </Text>
+                <Text className="mt-0.5 text-xs text-text-tertiary">
+                  {formatDate(item.createdAt)}
+                </Text>
               </View>
-            )}
-          />
+            </View>
+          ))
         )}
       </View>
 
       {/* Sign out */}
       <TouchableOpacity
-        className="m-4 items-center rounded-xl border border-red-500 p-3.5"
+        className="mx-4 mb-10 flex-row items-center justify-center gap-2 rounded-xl border border-danger py-4"
         onPress={() => signOut()}
+        accessibilityRole="button"
+        accessibilityLabel="Sign out"
       >
-        <Text className="text-base font-semibold text-red-500">Sign Out</Text>
+        <Ionicons name="log-out-outline" size={18} color={COLORS.danger} />
+        <Text className="text-base font-semibold text-danger">Sign Out</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   )
 }

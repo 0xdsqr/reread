@@ -1,27 +1,25 @@
+import { Ionicons } from "@expo/vector-icons"
 import { useMutation, useQuery } from "convex/react"
 import { Stack, useLocalSearchParams } from "expo-router"
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import {
   ActivityIndicator,
   Alert,
-  Image,
+  FlatList,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native"
-import type { Id } from "../../lib/api"
-import { api } from "../../lib/api"
-import {
-  ACCENT,
-  formatDate,
-  getStatusColor,
-  getStatusLabel,
-} from "../../lib/constants"
+import { BookCover, EmptyState, StatusBadge, WordCard } from "~/components"
+import type { Id } from "~/lib/api"
+import { api } from "~/lib/api"
+import { COLORS, formatDate } from "~/lib/constants"
 
-// Validate that a string is a valid Convex ID format (starts with table name)
 function isValidUserBookId(id: string): id is Id<"userBooks"> {
   return typeof id === "string" && id.startsWith("userBooks:")
 }
@@ -29,13 +27,14 @@ function isValidUserBookId(id: string): id is Id<"userBooks"> {
 export default function BookDetail() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const [showAddWord, setShowAddWord] = useState(false)
-  const [word, setWord] = useState("")
-  const [definition, setDefinition] = useState("")
-  const [context, setContext] = useState("")
-  const [pageNumber, setPageNumber] = useState("")
-  const [notes, setNotes] = useState("")
+  const [wordForm, setWordForm] = useState({
+    word: "",
+    definition: "",
+    context: "",
+    pageNumber: "",
+    notes: "",
+  })
 
-  // Validate the ID parameter before using it
   const userBookId: Id<"userBooks"> | undefined =
     id && isValidUserBookId(id) ? id : undefined
 
@@ -49,53 +48,72 @@ export default function BookDetail() {
   )
   const addWord = useMutation(api.words.add)
 
-  const handleAddWord = async () => {
-    if (!word.trim()) {
-      Alert.alert("Error", "Please enter a word")
-      return
-    }
-
-    if (!userBookId) {
-      Alert.alert("Error", "Invalid book ID")
-      return
-    }
+  const handleAddWord = useCallback(async () => {
+    if (!wordForm.word.trim() || !userBookId) return
 
     try {
       await addWord({
         userBookId,
-        word: word.trim(),
-        definition: definition.trim() || undefined,
-        context: context.trim() || undefined,
-        pageNumber: pageNumber ? parseInt(pageNumber, 10) : undefined,
-        notes: notes.trim() || undefined,
+        word: wordForm.word.trim(),
+        definition: wordForm.definition.trim() || undefined,
+        context: wordForm.context.trim() || undefined,
+        pageNumber: wordForm.pageNumber
+          ? parseInt(wordForm.pageNumber, 10)
+          : undefined,
+        notes: wordForm.notes.trim() || undefined,
       })
 
-      setWord("")
-      setDefinition("")
-      setContext("")
-      setPageNumber("")
-      setNotes("")
+      setWordForm({
+        word: "",
+        definition: "",
+        context: "",
+        pageNumber: "",
+        notes: "",
+      })
       setShowAddWord(false)
-
-      Alert.alert("Success", "Word added successfully!")
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : "Failed to add word"
       Alert.alert("Error", msg)
     }
-  }
+  }, [wordForm, userBookId, addWord])
+
+  const renderWordItem = useCallback(
+    ({
+      item,
+    }: {
+      item: typeof wordsForBook extends (infer T)[] | undefined ? T : never
+    }) => (
+      <View className="mx-5 mb-3">
+        <WordCard
+          word={item.word}
+          definition={item.definition}
+          context={item.context}
+          pageNumber={item.pageNumber}
+          notes={item.notes}
+          createdAt={item.createdAt}
+        />
+      </View>
+    ),
+    [],
+  )
 
   if (currentBook === undefined) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator size="large" color={ACCENT} />
+      <View className="flex-1 items-center justify-center bg-surface-secondary">
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     )
   }
 
   if (!currentBook) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <Text className="text-base text-gray-500">Book not found</Text>
+      <View className="flex-1 bg-surface-secondary">
+        <Stack.Screen options={{ title: "Not Found" }} />
+        <EmptyState
+          icon="alert-circle-outline"
+          title="Book not found"
+          subtitle="This book may have been removed from your library"
+        />
       </View>
     )
   }
@@ -103,221 +121,222 @@ export default function BookDetail() {
   const { book, userBook } = currentBook
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-surface-secondary">
       <Stack.Screen
         options={{
           title: book?.title || "Book Detail",
-          headerBackTitle: "Books",
+          headerBackTitle: "Library",
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: COLORS.surface },
         }}
       />
 
-      <ScrollView>
-        {/* Book Header */}
-        <View className="mb-2 bg-white p-5">
-          <View className="flex-row">
-            {book?.coverUrl ? (
-              <Image
-                source={{ uri: book.coverUrl }}
-                className="mr-4 h-[120px] w-20 rounded-lg"
-                resizeMode="cover"
-              />
-            ) : (
-              <View className="mr-4 h-[120px] w-20 items-center justify-center rounded-lg bg-neutral-200">
-                <Text className="text-base text-gray-500">No Cover</Text>
-              </View>
-            )}
+      <FlatList
+        data={wordsForBook ?? []}
+        keyExtractor={(item) => item._id}
+        renderItem={renderWordItem}
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="pb-6"
+        ListHeaderComponent={
+          <>
+            {/* Book header */}
+            <View className="bg-surface px-5 pb-5 pt-2">
+              <View className="flex-row">
+                <BookCover coverUrl={book?.coverUrl} size="lg" />
 
-            <View className="flex-1">
-              <Text className="mb-2 text-xl font-bold text-gray-900">
-                {book?.title || "Unknown Title"}
-              </Text>
+                <View className="ml-4 flex-1">
+                  <Text className="text-xl font-bold text-text-primary">
+                    {book?.title || "Unknown Title"}
+                  </Text>
+                  <Text className="mt-1 text-base text-text-secondary">
+                    {book?.author || "Unknown Author"}
+                  </Text>
 
-              <Text className="mb-3 text-base text-gray-500">
-                by {book?.author || "Unknown Author"}
-              </Text>
-
-              <View
-                className="mb-2 self-start rounded-2xl px-3 py-1.5"
-                style={{ backgroundColor: getStatusColor(userBook.status) }}
-              >
-                <Text className="text-sm font-medium text-white">
-                  {getStatusLabel(userBook.status)}
-                </Text>
-              </View>
-
-              {book?.firstPublishYear && (
-                <Text className="text-sm text-gray-400">
-                  Published {book.firstPublishYear}
-                </Text>
-              )}
-            </View>
-          </View>
-
-          {userBook.notes && (
-            <View className="mt-4 rounded-lg bg-gray-50 p-3">
-              <Text className="text-sm italic text-gray-500">
-                &ldquo;{userBook.notes}&rdquo;
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Words Section */}
-        <View className="bg-white p-5">
-          <View className="mb-4 flex-row items-center justify-between">
-            <Text className="text-lg font-bold text-gray-900">
-              My Words ({wordsForBook?.length ?? 0})
-            </Text>
-
-            <TouchableOpacity
-              className="rounded-lg bg-blue-500 px-4 py-2"
-              onPress={() => setShowAddWord(true)}
-            >
-              <Text className="font-medium text-white">+ Add Word</Text>
-            </TouchableOpacity>
-          </View>
-
-          {wordsForBook === undefined ? (
-            <ActivityIndicator size="small" color={ACCENT} className="my-8" />
-          ) : wordsForBook.length === 0 ? (
-            <View className="items-center py-8">
-              <Text className="text-center text-base text-gray-500">
-                No words saved for this book yet
-              </Text>
-              <Text className="mt-1 text-center text-sm text-gray-400">
-                Tap &ldquo;Add Word&rdquo; to save vocabulary as you read
-              </Text>
-            </View>
-          ) : (
-            <View>
-              {wordsForBook.map((wordItem) => (
-                <View
-                  key={wordItem._id}
-                  className="mb-3 rounded-lg bg-gray-50 p-4"
-                >
-                  <View className="mb-2 flex-row items-start justify-between">
-                    <Text className="flex-1 text-lg font-bold text-gray-900">
-                      {wordItem.word}
-                    </Text>
-                    {wordItem.pageNumber != null && (
-                      <Text className="rounded-xl bg-white px-2 py-0.5 text-xs text-gray-500">
-                        p. {wordItem.pageNumber}
-                      </Text>
-                    )}
+                  <View className="mt-3">
+                    <StatusBadge status={userBook.status} solid />
                   </View>
 
-                  {wordItem.definition && (
-                    <Text className="mb-2 text-base text-gray-700">
-                      {wordItem.definition}
+                  {book?.firstPublishYear && (
+                    <Text className="mt-2 text-sm text-text-tertiary">
+                      Published {book.firstPublishYear}
                     </Text>
                   )}
+                </View>
+              </View>
 
-                  {wordItem.context && (
-                    <Text className="mb-2 text-sm italic text-gray-500">
-                      &ldquo;{wordItem.context}&rdquo;
-                    </Text>
-                  )}
-
-                  {wordItem.notes && (
-                    <Text className="text-sm text-gray-500">
-                      Note: {wordItem.notes}
-                    </Text>
-                  )}
-
-                  <Text className="mt-2 text-xs text-gray-400">
-                    Added {formatDate(wordItem.createdAt)}
+              {userBook.notes && (
+                <View className="mt-4 rounded-xl bg-surface-secondary p-3">
+                  <Text className="text-sm italic leading-5 text-text-secondary">
+                    "{userBook.notes}"
                   </Text>
                 </View>
-              ))}
+              )}
             </View>
-          )}
-        </View>
-      </ScrollView>
+
+            {/* Words header */}
+            <View className="flex-row items-center justify-between px-5 pb-3 pt-5">
+              <Text className="text-base font-bold text-text-primary">
+                Words ({wordsForBook?.length ?? 0})
+              </Text>
+              <TouchableOpacity
+                className="flex-row items-center gap-1 rounded-xl bg-primary px-4 py-2.5"
+                onPress={() => setShowAddWord(true)}
+                accessibilityRole="button"
+              >
+                <Ionicons name="add" size={18} color={COLORS.textInverse} />
+                <Text className="text-sm font-semibold text-text-inverse">
+                  Add Word
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        }
+        ListEmptyComponent={
+          wordsForBook === undefined ? (
+            <ActivityIndicator
+              size="small"
+              color={COLORS.primary}
+              className="my-10"
+            />
+          ) : (
+            <View className="items-center px-8 py-10">
+              <View className="mb-3 h-14 w-14 items-center justify-center rounded-full bg-primary-light">
+                <Ionicons
+                  name="text-outline"
+                  size={24}
+                  color={COLORS.primary}
+                />
+              </View>
+              <Text className="text-center text-base font-semibold text-text-primary">
+                No words yet
+              </Text>
+              <Text className="mt-1 text-center text-sm text-text-secondary">
+                Tap "Add Word" to save vocabulary as you read
+              </Text>
+            </View>
+          )
+        }
+      />
 
       {/* Add Word Modal */}
       <Modal
         visible={showAddWord}
+        transparent
         animationType="slide"
-        presentationStyle="pageSheet"
+        onRequestClose={() => setShowAddWord(false)}
       >
-        <View className="flex-1 bg-white">
-          <View className="flex-row items-center justify-between border-b border-gray-200 px-5 py-4">
-            <TouchableOpacity onPress={() => setShowAddWord(false)}>
-              <Text className="text-base text-red-500">Cancel</Text>
-            </TouchableOpacity>
+        <KeyboardAvoidingView
+          className="flex-1"
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <TouchableOpacity
+            className="flex-1 justify-end bg-black/40"
+            activeOpacity={1}
+            onPress={() => setShowAddWord(false)}
+          >
+            <View
+              className="max-h-[85%] rounded-t-3xl bg-surface pt-6"
+              onStartShouldSetResponder={() => true}
+            >
+              <View className="mb-5 self-center h-1 w-10 rounded-full bg-border-strong" />
 
-            <Text className="text-lg font-bold text-gray-900">Add Word</Text>
+              <ScrollView className="px-5" keyboardShouldPersistTaps="handled">
+                <Text className="mb-5 text-xl font-bold text-text-primary">
+                  Add a Word
+                </Text>
 
-            <TouchableOpacity onPress={handleAddWord}>
-              <Text className="text-base font-medium text-blue-500">Save</Text>
-            </TouchableOpacity>
-          </View>
+                <Text className="mb-2 text-sm font-medium text-text-secondary">
+                  Word *
+                </Text>
+                <TextInput
+                  className="mb-4 rounded-xl border border-border-strong px-4 py-3 text-base text-text-primary"
+                  placeholder="Enter the word"
+                  placeholderTextColor={COLORS.textTertiary}
+                  value={wordForm.word}
+                  onChangeText={(t) => setWordForm((f) => ({ ...f, word: t }))}
+                  autoCapitalize="none"
+                />
 
-          <ScrollView className="p-5">
-            <Text className="mb-2 text-base font-medium text-gray-700">
-              Word *
-            </Text>
-            <TextInput
-              className="mb-4 rounded-lg border border-gray-200 px-3 py-3 text-base text-gray-900"
-              placeholder="Enter the word"
-              placeholderTextColor="#9ca3af"
-              value={word}
-              onChangeText={setWord}
-              autoCapitalize="none"
-            />
+                <Text className="mb-2 text-sm font-medium text-text-secondary">
+                  Definition
+                </Text>
+                <TextInput
+                  className="mb-4 min-h-20 rounded-xl border border-border-strong px-4 py-3 text-base text-text-primary"
+                  placeholder="What does it mean?"
+                  placeholderTextColor={COLORS.textTertiary}
+                  value={wordForm.definition}
+                  onChangeText={(t) =>
+                    setWordForm((f) => ({ ...f, definition: t }))
+                  }
+                  multiline
+                  textAlignVertical="top"
+                />
 
-            <Text className="mb-2 text-base font-medium text-gray-700">
-              Definition
-            </Text>
-            <TextInput
-              className="mb-4 min-h-[80px] rounded-lg border border-gray-200 px-3 py-3 text-base text-gray-900"
-              placeholder="What does this word mean?"
-              placeholderTextColor="#9ca3af"
-              value={definition}
-              onChangeText={setDefinition}
-              multiline
-              textAlignVertical="top"
-            />
+                <Text className="mb-2 text-sm font-medium text-text-secondary">
+                  Context
+                </Text>
+                <TextInput
+                  className="mb-4 min-h-20 rounded-xl border border-border-strong px-4 py-3 text-base text-text-primary"
+                  placeholder="How was it used in the book?"
+                  placeholderTextColor={COLORS.textTertiary}
+                  value={wordForm.context}
+                  onChangeText={(t) =>
+                    setWordForm((f) => ({ ...f, context: t }))
+                  }
+                  multiline
+                  textAlignVertical="top"
+                />
 
-            <Text className="mb-2 text-base font-medium text-gray-700">
-              Context
-            </Text>
-            <TextInput
-              className="mb-4 min-h-[80px] rounded-lg border border-gray-200 px-3 py-3 text-base text-gray-900"
-              placeholder="How was it used in the book?"
-              placeholderTextColor="#9ca3af"
-              value={context}
-              onChangeText={setContext}
-              multiline
-              textAlignVertical="top"
-            />
+                <Text className="mb-2 text-sm font-medium text-text-secondary">
+                  Page Number
+                </Text>
+                <TextInput
+                  className="mb-4 rounded-xl border border-border-strong px-4 py-3 text-base text-text-primary"
+                  placeholder="Optional"
+                  placeholderTextColor={COLORS.textTertiary}
+                  value={wordForm.pageNumber}
+                  onChangeText={(t) =>
+                    setWordForm((f) => ({ ...f, pageNumber: t }))
+                  }
+                  keyboardType="numeric"
+                />
 
-            <Text className="mb-2 text-base font-medium text-gray-700">
-              Page Number
-            </Text>
-            <TextInput
-              className="mb-4 rounded-lg border border-gray-200 px-3 py-3 text-base text-gray-900"
-              placeholder="Page number (optional)"
-              placeholderTextColor="#9ca3af"
-              value={pageNumber}
-              onChangeText={setPageNumber}
-              keyboardType="numeric"
-            />
+                <Text className="mb-2 text-sm font-medium text-text-secondary">
+                  Notes
+                </Text>
+                <TextInput
+                  className="mb-6 min-h-20 rounded-xl border border-border-strong px-4 py-3 text-base text-text-primary"
+                  placeholder="Personal notes"
+                  placeholderTextColor={COLORS.textTertiary}
+                  value={wordForm.notes}
+                  onChangeText={(t) => setWordForm((f) => ({ ...f, notes: t }))}
+                  multiline
+                  textAlignVertical="top"
+                />
 
-            <Text className="mb-2 text-base font-medium text-gray-700">
-              Notes
-            </Text>
-            <TextInput
-              className="mb-4 min-h-[80px] rounded-lg border border-gray-200 px-3 py-3 text-base text-gray-900"
-              placeholder="Personal notes about this word"
-              placeholderTextColor="#9ca3af"
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-              textAlignVertical="top"
-            />
-          </ScrollView>
-        </View>
+                <TouchableOpacity
+                  className="items-center rounded-xl bg-primary py-4"
+                  style={!wordForm.word.trim() ? { opacity: 0.4 } : undefined}
+                  onPress={handleAddWord}
+                  disabled={!wordForm.word.trim()}
+                  accessibilityRole="button"
+                >
+                  <Text className="text-base font-semibold text-text-inverse">
+                    Save Word
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  className="mb-10 mt-2 items-center py-3"
+                  onPress={() => setShowAddWord(false)}
+                  accessibilityRole="button"
+                >
+                  <Text className="text-base text-text-secondary">Cancel</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   )

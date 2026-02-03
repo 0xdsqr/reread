@@ -5,9 +5,9 @@ import { Slot, useRouter, useSegments } from "expo-router"
 import * as SecureStore from "expo-secure-store"
 import { useEffect } from "react"
 import { ActivityIndicator, View } from "react-native"
-import { ErrorBoundary } from "~/components/ErrorBoundary"
-import { OfflineBanner } from "~/components/OfflineBanner"
+import { ErrorBoundary, OfflineBanner } from "~/components"
 import { useNetworkStatus } from "~/hooks/useNetworkStatus"
+import { COLORS } from "~/lib/constants"
 
 const tokenStorage = {
   getItem(key: string) {
@@ -46,12 +46,12 @@ function AuthGate() {
     } else if (isAuthenticated && inAuthGroup) {
       router.replace("/(tabs)")
     }
-  }, [isLoading, isAuthenticated, segments])
+  }, [isLoading, isAuthenticated, segments, router])
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator size="large" color="#6366f1" />
+      <View className="flex-1 items-center justify-center bg-surface">
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     )
   }

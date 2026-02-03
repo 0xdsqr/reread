@@ -1,20 +1,20 @@
+import { Ionicons } from "@expo/vector-icons"
 import { useAction, useMutation } from "convex/react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Image,
   Modal,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native"
-import { api } from "../../lib/api"
-import type { ReadingStatus } from "../../lib/constants"
+import { BookCover, EmptyState } from "~/components"
+import { api } from "~/lib/api"
+import { COLORS, type ReadingStatus, STATUS_CONFIG } from "~/lib/constants"
 
-// Book search result from Open Library API
 type BookResult = {
   key: string
   title: string
@@ -34,7 +34,6 @@ export default function Search() {
   const searchBooks = useAction(api.books.search)
   const addBook = useMutation(api.userBooks.add)
 
-  // Debounced search
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -81,9 +80,9 @@ export default function Search() {
           firstPublishYear: selectedBook.firstPublishYear,
           status,
         })
-        Alert.alert("Added!", `"${selectedBook.title}" added to your library.`)
         setShowStatusPicker(false)
         setSelectedBook(null)
+        Alert.alert("Added!", `"${selectedBook.title}" added to your library.`)
       } catch (error: unknown) {
         const msg =
           error instanceof Error ? error.message : "Something went wrong"
@@ -93,91 +92,109 @@ export default function Search() {
     [selectedBook, addBook],
   )
 
-  const renderBook = ({ item }: { item: BookResult }) => (
-    <TouchableOpacity
-      className="flex-row items-center border-b border-gray-100 py-3"
-      onPress={() => {
-        setSelectedBook(item)
-        setShowStatusPicker(true)
-      }}
-      activeOpacity={0.7}
-    >
-      {item.coverUrl ? (
-        <Image
-          source={{ uri: item.coverUrl }}
-          className="h-[68px] w-12 rounded"
-        />
-      ) : (
-        <View className="h-[68px] w-12 items-center justify-center rounded bg-gray-200">
-          <Text className="text-[10px] text-gray-500">No Cover</Text>
-        </View>
-      )}
-      <View className="ml-3 flex-1">
-        <Text
-          className="text-base font-semibold text-gray-900"
-          numberOfLines={2}
-        >
-          {item.title}
-        </Text>
-        <Text className="mt-0.5 text-sm text-gray-500" numberOfLines={1}>
-          {item.author}
-        </Text>
-        {item.firstPublishYear != null && (
-          <Text className="mt-0.5 text-xs text-gray-400">
-            {item.firstPublishYear}
+  const renderBook = useCallback(
+    ({ item }: { item: BookResult }) => (
+      <TouchableOpacity
+        className="mx-4 mb-3 flex-row items-center rounded-2xl bg-surface p-3 shadow-sm"
+        onPress={() => {
+          setSelectedBook(item)
+          setShowStatusPicker(true)
+        }}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityHint="Tap to add this book to your library"
+      >
+        <BookCover coverUrl={item.coverUrl} size="sm" />
+        <View className="ml-3 flex-1">
+          <Text
+            className="text-base font-semibold text-text-primary"
+            numberOfLines={2}
+          >
+            {item.title}
           </Text>
-        )}
-      </View>
-      <Text className="px-2 text-2xl font-bold text-indigo-500">+</Text>
-    </TouchableOpacity>
+          <Text
+            className="mt-0.5 text-sm text-text-secondary"
+            numberOfLines={1}
+          >
+            {item.author}
+          </Text>
+          {item.firstPublishYear != null && (
+            <Text className="mt-0.5 text-xs text-text-tertiary">
+              {item.firstPublishYear}
+            </Text>
+          )}
+        </View>
+        <View className="ml-2 h-9 w-9 items-center justify-center rounded-full bg-primary-light">
+          <Ionicons name="add" size={20} color={COLORS.primary} />
+        </View>
+      </TouchableOpacity>
+    ),
+    [],
   )
 
+  const statusOptions: {
+    key: ReadingStatus
+    label: string
+    icon: keyof typeof Ionicons.glyphMap
+  }[] = [
+    { key: "reading", label: "Currently Reading", icon: "book" },
+    { key: "finished", label: "Finished", icon: "checkmark-circle" },
+    { key: "want-to-read", label: "Want to Read", icon: "bookmark" },
+  ]
+
   return (
-    <View className="flex-1 bg-white">
-      <View className="m-4 flex-row items-center rounded-xl bg-gray-100 px-3 py-2.5">
-        <TextInput
-          className="flex-1 text-base text-gray-900"
-          placeholder="Search books by title, author, or ISBN..."
-          placeholderTextColor="#9ca3af"
-          value={query}
-          onChangeText={setQuery}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        {query.length > 0 && (
-          <TouchableOpacity onPress={() => setQuery("")}>
-            <Text className="p-1 text-base text-gray-400">X</Text>
-          </TouchableOpacity>
-        )}
+    <View className="flex-1 bg-surface-secondary">
+      {/* Search bar */}
+      <View className="border-b border-border bg-surface px-4 py-3">
+        <View className="flex-row items-center rounded-xl bg-surface-secondary px-3 py-2.5">
+          <Ionicons name="search" size={18} color={COLORS.textTertiary} />
+          <TextInput
+            className="ml-2 flex-1 text-base text-text-primary"
+            placeholder="Search by title, author, or ISBN..."
+            placeholderTextColor={COLORS.textTertiary}
+            value={query}
+            onChangeText={setQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {query.length > 0 && (
+            <TouchableOpacity
+              className="h-7 w-7 items-center justify-center rounded-full bg-border-strong"
+              onPress={() => setQuery("")}
+              accessibilityRole="button"
+              accessibilityLabel="Clear search"
+            >
+              <Ionicons name="close" size={14} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
+      {/* Results */}
       {query.trim().length < 2 ? (
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-xl font-bold text-gray-900">
-            Find Your Next Read
-          </Text>
-          <Text className="mt-1 text-base text-gray-500">
-            Search by title, author, or ISBN
-          </Text>
-        </View>
+        <EmptyState
+          icon="search-outline"
+          title="Find Your Next Read"
+          subtitle="Search by title, author, or ISBN"
+        />
       ) : isSearching ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#6366f1" />
-          <Text className="mt-3 text-base text-gray-500">Searching...</Text>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text className="mt-3 text-sm text-text-secondary">Searching...</Text>
         </View>
       ) : results !== null && results.length === 0 ? (
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-xl font-bold text-gray-900">No Results</Text>
-          <Text className="mt-1 text-base text-gray-500">
-            Try a different search term
-          </Text>
-        </View>
+        <EmptyState
+          icon="search-outline"
+          title="No Results"
+          subtitle="Try a different search term"
+        />
       ) : results !== null ? (
         <FlatList
           data={results}
           keyExtractor={(item) => item.key}
           renderItem={renderBook}
-          contentContainerClassName="px-4"
+          contentContainerClassName="pt-3 pb-6"
+          showsVerticalScrollIndicator={false}
         />
       ) : null}
 
@@ -185,57 +202,62 @@ export default function Search() {
       <Modal
         visible={showStatusPicker}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setShowStatusPicker(false)}
       >
         <TouchableOpacity
-          className="flex-1 items-center justify-center bg-black/50"
+          className="flex-1 justify-end bg-black/40"
           activeOpacity={1}
           onPress={() => setShowStatusPicker(false)}
         >
-          <View className="w-[85%] max-w-[360px] rounded-2xl bg-white p-6">
+          <View
+            className="rounded-t-3xl bg-surface px-5 pb-10 pt-6"
+            onStartShouldSetResponder={() => true}
+          >
+            <View className="mb-5 self-center h-1 w-10 rounded-full bg-border-strong" />
+
             <Text
-              className="text-center text-lg font-bold text-gray-900"
+              className="mb-1 text-center text-lg font-bold text-text-primary"
               numberOfLines={2}
             >
-              Add &ldquo;{selectedBook?.title}&rdquo;
+              {selectedBook?.title}
             </Text>
-            <Text className="mt-1 mb-4 text-center text-sm text-gray-500">
-              Choose a status:
+            <Text className="mb-6 text-center text-sm text-text-secondary">
+              Choose a reading status
             </Text>
 
-            <TouchableOpacity
-              className="mb-2.5 items-center rounded-xl bg-indigo-500 p-3.5"
-              onPress={() => handleAddBook("reading")}
-            >
-              <Text className="text-base font-semibold text-white">
-                Currently Reading
-              </Text>
-            </TouchableOpacity>
+            {statusOptions.map((option) => {
+              const config = STATUS_CONFIG[option.key]
+              return (
+                <TouchableOpacity
+                  key={option.key}
+                  className="mb-3 flex-row items-center rounded-xl p-4"
+                  style={{ backgroundColor: config.lightColor }}
+                  onPress={() => handleAddBook(option.key)}
+                  accessibilityRole="button"
+                >
+                  <Ionicons name={option.icon} size={20} color={config.color} />
+                  <Text
+                    className="ml-3 flex-1 text-base font-semibold"
+                    style={{ color: config.color }}
+                  >
+                    {option.label}
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={18}
+                    color={config.color}
+                  />
+                </TouchableOpacity>
+              )
+            })}
 
             <TouchableOpacity
-              className="mb-2.5 items-center rounded-xl bg-emerald-500 p-3.5"
-              onPress={() => handleAddBook("finished")}
-            >
-              <Text className="text-base font-semibold text-white">
-                Finished
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="mb-2.5 items-center rounded-xl bg-amber-500 p-3.5"
-              onPress={() => handleAddBook("want-to-read")}
-            >
-              <Text className="text-base font-semibold text-white">
-                Want to Read
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="mt-1 items-center p-3"
+              className="mt-2 items-center py-3"
               onPress={() => setShowStatusPicker(false)}
+              accessibilityRole="button"
             >
-              <Text className="text-base text-gray-500">Cancel</Text>
+              <Text className="text-base text-text-secondary">Cancel</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

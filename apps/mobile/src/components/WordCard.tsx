@@ -1,5 +1,5 @@
 import type React from "react"
-import { Text, View } from "react-native"
+import { Text, TouchableOpacity, View } from "react-native"
 import { formatDate } from "../lib/constants"
 
 interface WordCardProps {
@@ -9,14 +9,11 @@ interface WordCardProps {
   pageNumber?: number | null
   notes?: string | null
   createdAt?: number
-  /** Book title to show in footer */
   bookTitle?: string
-  /** Book author to show in footer */
   bookAuthor?: string
-  /** Number of likes */
   likesCount?: number
-  /** Optional right-side action (delete button, etc.) */
   action?: React.ReactNode
+  onPress?: () => void
 }
 
 export function WordCard({
@@ -30,56 +27,68 @@ export function WordCard({
   bookAuthor,
   likesCount,
   action,
+  onPress,
 }: WordCardProps) {
-  return (
-    <View className="mb-3 mx-4 rounded-lg bg-white p-4 shadow-sm elevation-2">
-      <View className="mb-2 flex-row items-start">
-        <Text className="flex-1 text-xl font-bold text-gray-900">{word}</Text>
+  const content = (
+    <View className="rounded-2xl bg-surface p-4 shadow-sm">
+      {/* Header */}
+      <View className="flex-row items-start justify-between">
+        <Text className="flex-1 text-lg font-bold text-text-primary">
+          {word}
+        </Text>
         {pageNumber != null && (
-          <Text className="rounded-xl bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
-            p. {pageNumber}
-          </Text>
+          <View className="ml-2 rounded-lg bg-surface-secondary px-2 py-0.5">
+            <Text className="text-xs font-medium text-text-tertiary">
+              p. {pageNumber}
+            </Text>
+          </View>
         )}
       </View>
 
+      {/* Definition */}
       {definition ? (
-        <Text className="mb-2 text-base text-gray-700">{definition}</Text>
+        <Text className="mt-2 text-sm leading-5 text-text-secondary">
+          {definition}
+        </Text>
       ) : null}
 
+      {/* Context quote */}
       {context ? (
-        <View className="mb-2 rounded-md bg-gray-50 p-3">
-          <Text className="text-sm italic text-gray-500">
-            &ldquo;{context}&rdquo;
+        <View className="mt-2 rounded-xl bg-surface-secondary p-3">
+          <Text className="text-sm italic leading-5 text-text-secondary">
+            "{context}"
           </Text>
         </View>
       ) : null}
 
+      {/* Notes */}
       {notes ? (
-        <Text className="mb-2 text-sm text-gray-500">Note: {notes}</Text>
+        <Text className="mt-2 text-sm text-text-tertiary">Note: {notes}</Text>
       ) : null}
 
+      {/* Footer */}
       {(bookTitle || createdAt != null || likesCount != null) && (
-        <View className="flex-row items-center justify-between border-t border-gray-100 pt-2">
+        <View className="mt-3 flex-row items-center justify-between border-t border-border pt-3">
           {bookTitle && (
-            <View>
-              <Text className="text-xs font-medium text-gray-700">
+            <View className="flex-1">
+              <Text className="text-xs font-medium text-text-secondary">
                 {bookTitle}
               </Text>
               {bookAuthor && (
-                <Text className="text-[11px] text-gray-400">
-                  by {bookAuthor}
+                <Text className="mt-0.5 text-xs text-text-tertiary">
+                  {bookAuthor}
                 </Text>
               )}
             </View>
           )}
           <View className="items-end">
             {createdAt != null && (
-              <Text className="text-[11px] text-gray-400">
+              <Text className="text-xs text-text-tertiary">
                 {formatDate(createdAt)}
               </Text>
             )}
             {(likesCount ?? 0) > 0 && (
-              <Text className="text-[11px] text-red-500">
+              <Text className="mt-0.5 text-xs font-medium text-danger">
                 {likesCount} {likesCount === 1 ? "like" : "likes"}
               </Text>
             )}
@@ -87,7 +96,22 @@ export function WordCard({
         </View>
       )}
 
-      {action}
+      {/* Action slot */}
+      {action && <View className="mt-3">{action}</View>}
     </View>
   )
+
+  if (onPress) {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+      >
+        {content}
+      </TouchableOpacity>
+    )
+  }
+
+  return content
 }

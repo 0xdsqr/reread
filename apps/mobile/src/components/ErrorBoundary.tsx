@@ -1,5 +1,7 @@
+import { Ionicons } from "@expo/vector-icons"
 import React from "react"
 import { Text, TouchableOpacity, View } from "react-native"
+import { COLORS } from "../lib/constants"
 
 interface Props {
   children: React.ReactNode
@@ -27,18 +29,23 @@ export class ErrorBoundary extends React.Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <View className="flex-1 items-center justify-center bg-white p-8">
-          <Text className="mb-2 text-xl font-bold text-gray-900">
+        <View className="flex-1 items-center justify-center bg-surface p-8">
+          <View className="mb-5 h-16 w-16 items-center justify-center rounded-full bg-danger-light">
+            <Ionicons name="warning-outline" size={28} color={COLORS.danger} />
+          </View>
+          <Text className="mb-2 text-xl font-bold text-text-primary">
             Something went wrong
           </Text>
-          <Text className="mb-6 text-center text-sm text-gray-500">
-            {this.state.error?.message || "An unexpected error occurred"}
+          <Text className="mb-8 text-center text-sm leading-5 text-text-secondary">
+            An unexpected error occurred. Please try again.
           </Text>
           <TouchableOpacity
-            className="rounded-lg bg-indigo-500 px-6 py-3"
+            className="rounded-xl bg-primary px-8 py-4"
             onPress={() => this.setState({ hasError: false, error: null })}
+            accessibilityRole="button"
+            accessibilityLabel="Try again"
           >
-            <Text className="text-base font-semibold text-white">
+            <Text className="text-base font-semibold text-text-inverse">
               Try Again
             </Text>
           </TouchableOpacity>
