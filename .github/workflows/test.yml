@@ -80,6 +80,34 @@ jobs:
       - name: run tests
         run: nix develop --command bun run test
 
+  build:
+    name: build
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: install dependencies
+        run: bun install
+
+      - name: build ios
+        run: eas build --platform ios --profile preview --non-interactive
+        working-directory: apps/mobile
+
+      - name: build android
+        run: eas build --platform android --profile preview --non-interactive
+        working-directory: apps/mobile
+
   required:
     name: all checks passed
     runs-on: ubuntu-latest
@@ -89,6 +117,7 @@ jobs:
       - nixfmt
       - typecheck
       - test
+      - build
     steps:
       - name: verify all jobs passed
         run: |

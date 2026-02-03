@@ -2,23 +2,29 @@
 let
   pkgs = import nixpkgs { inherit system; };
 
+  isDarwin = pkgs.stdenv.isDarwin;
+
   # Common packages for all shells
-  commonPackages = with pkgs; [
-    curl
-    wget
-    git
-    just
-    watchman
-    nixfmt-rfc-style
-    nixfmt-tree
-    statix
-    deadnix
-    nil
-    bun
-    nodejs_24
-    starship
-    cocoapods
-  ];
+  commonPackages =
+    with pkgs;
+    [
+      curl
+      wget
+      git
+      just
+      watchman
+      nixfmt-rfc-style
+      nixfmt-tree
+      statix
+      deadnix
+      nil
+      bun
+      nodejs_24
+      starship
+    ]
+    ++ pkgs.lib.optionals isDarwin [
+      cocoapods
+    ];
 
   # Common shell configuration
   commonShell = {
