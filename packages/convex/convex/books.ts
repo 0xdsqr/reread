@@ -1,4 +1,4 @@
-import { ConvexError, v } from "convex/values"
+import { v } from "convex/values"
 import { action, mutation, query } from "./_generated/server"
 
 // Search books using Open Library API.
@@ -70,8 +70,16 @@ export const getReaders = query({
     const users = await Promise.all(
       userBooks.map(async (userBook) => {
         const user = await ctx.db.get(userBook.userId)
+        if (!user || !user.settings.publicProfile) return null
         return {
-          ...user,
+          _id: user._id,
+          _creationTime: user._creationTime,
+          username: user.username,
+          avatarUrl: user.avatarUrl,
+          bio: user.bio,
+          stats: user.stats,
+          badges: user.badges,
+          createdAt: user.createdAt,
           status: userBook.status,
           startedAt: userBook.startedAt,
           finishedAt: userBook.finishedAt,
@@ -79,7 +87,7 @@ export const getReaders = query({
       }),
     )
 
-    return users.filter(Boolean)
+    return users.filter((user): user is NonNullable<typeof user> => user !== null)
   },
 })
 

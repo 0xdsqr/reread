@@ -35,6 +35,7 @@ export default function Search() {
   const addBook = useMutation(api.userBooks.add)
 
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const requestIdRef = useRef(0)
 
   useEffect(() => {
     if (query.trim().length < 2) {
@@ -49,14 +50,21 @@ export default function Search() {
       clearTimeout(debounceTimer.current)
     }
 
+    const requestId = ++requestIdRef.current
     debounceTimer.current = setTimeout(async () => {
       try {
         const data = await searchBooks({ query: query.trim() })
-        setResults(data as BookResult[])
+        if (requestId === requestIdRef.current) {
+          setResults(data as BookResult[])
+        }
       } catch {
-        setResults([])
+        if (requestId === requestIdRef.current) {
+          setResults([])
+        }
       } finally {
-        setIsSearching(false)
+        if (requestId === requestIdRef.current) {
+          setIsSearching(false)
+        }
       }
     }, 400)
 

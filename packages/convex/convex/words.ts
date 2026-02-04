@@ -17,6 +17,11 @@ export const add = mutation({
     ctx,
     { userBookId, word, definition, context, pageNumber, notes, isPublic },
   ) => {
+    const normalizedWord = word.trim().toLowerCase()
+    if (!normalizedWord) {
+      throw new ConvexError("Word cannot be empty")
+    }
+
     const userId = await getAuthUserId(ctx)
     if (!userId) throw new ConvexError("Not authenticated")
 
@@ -29,7 +34,7 @@ export const add = mutation({
       userId,
       userBookId,
       bookId: userBook.bookId,
-      word: word.trim().toLowerCase(),
+      word: normalizedWord,
       definition,
       context,
       pageNumber,
