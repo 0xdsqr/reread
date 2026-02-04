@@ -17,10 +17,23 @@ export const getMe = query({
 export const getByUsername = query({
   args: { username: v.string() },
   handler: async (ctx, { username }) => {
-    return await ctx.db
+    const user = await ctx.db
       .query("users")
       .withIndex("by_username", (q) => q.eq("username", username))
       .first()
+
+    if (!user || !user.settings.publicProfile) return null
+
+    return {
+      _id: user._id,
+      _creationTime: user._creationTime,
+      username: user.username,
+      avatarUrl: user.avatarUrl,
+      bio: user.bio,
+      stats: user.stats,
+      badges: user.badges,
+      createdAt: user.createdAt,
+    }
   },
 })
 

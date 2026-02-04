@@ -108,6 +108,18 @@ describe("words.add", () => {
     const ub = await asUser.run(async (ctx) => ctx.db.get(userBookId))
     expect(ub!.wordsCount).toBe(3)
   })
+
+  it("rejects blank words", async () => {
+    const t = convexTest(schema, modules)
+    const { asUser, userBookId } = await seedUserWithBook(t)
+
+    await expect(
+      asUser.mutation(api.words.add, {
+        userBookId,
+        word: "   ",
+      }),
+    ).rejects.toThrow("Word cannot be empty")
+  })
 })
 
 describe("words.remove", () => {
