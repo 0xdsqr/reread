@@ -87,7 +87,9 @@ export const getReaders = query({
       }),
     )
 
-    return users.filter((user): user is NonNullable<typeof user> => user !== null)
+    return users.filter(
+      (user): user is NonNullable<typeof user> => user !== null,
+    )
   },
 })
 

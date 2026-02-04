@@ -43,7 +43,11 @@ describe("users.getByUsername", () => {
       await ctx.db.insert("users", {
         username: "private-user",
         email: "private@example.com",
-        settings: { darkMode: false, dyslexiaFont: false, publicProfile: false },
+        settings: {
+          darkMode: false,
+          dyslexiaFont: false,
+          publicProfile: false,
+        },
         stats: { booksCount: 0, wordsCount: 0, currentStreak: 0 },
         badges: [],
         createdAt: Date.now(),
